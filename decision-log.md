@@ -56,21 +56,37 @@ depends on it.
 **2026-08-26** - Repo public from first commit - v1 uses only public data; visible
 commit history is evidence of sustained work and enforces tidiness.
 
-2026-08-27 - Use Mechanical Permits *Issued*, not Submitted - a filed-but-never-issued
+**2026-08-27** - Use Mechanical Permits *Issued*, not Submitted - a filed-but-never-issued
 permit is not work, so Issued is the correct demand signal. Supersedes the ambiguous
 wording in the original charter.
 
-2026-08-27 - Default to two era tables (2010–2019, 2020–Present), skipping Before 2010 -
+**2026-08-27** - Default to two era tables (2010–2019, 2020–Present), skipping Before 2010 -
 860 weeks is ample; drops one schema seam and removes the 2008–09 construction collapse
 as a structural break. Adding the third table requires a stated reason.
 
-2026-08-27 - Normalize each era table separately before concatenating - separately
+**2026-08-27** - Normalize each era table separately before concatenating - separately
 maintained tables may differ in column names, date formats, and permit-type vocabulary.
 
-2026-08-27 - Valuation Target no longer possible - Looking at the both data sets 67is-svtd and 5m3t-xjex I realized that there is no valuation column so for the later change to the model target it will not be happening.
+**2026-08-27** - Valuation Target no longer possible - Looking at the both data sets 67is-svtd and 5m3t-xjex I realized that there is no valuation column so for the later change to the model target it will not be happening.
 
-2026-08-27 — [1:30] — Dataset IDs located and confirmed (67is-svtd 2020–Present, 5m3t-xjex 2010–2019); schemas inspected on both, 31 columns, identical; valuation field confirmed absent, logged, pending item closed.
+**2026-08-27** — [1:30] — Dataset IDs located and confirmed (67is-svtd 2020–Present, 5m3t-xjex 2010–2019); schemas inspected on both, 31 columns, identical; valuation field confirmed absent, logged, pending item closed.
 
+**2026-09-02** - Using a conda environment with Python 3.12 instead of venv - conda was already installed with Python 3.14 base; creating a 3.12 conda env avoided installing a second Python manager. Deviates from charter §8.
+
+**2026-09-02** — HVAC filter is `permit_type = 'HVAC'` — permit_type is a clean
+controlled field with five values (Plumbing, HVAC, Fire Sprinkler, Elevator,
+Pressure Vessel), identical vocabulary in both era tables, no nulls. WORK_DESC
+free text not needed. Charter §2.1 filter vocabulary item closed.
+
+**2026-09-02** — Pull five columns: permit_nbr, issue_date, zip_code, cd,
+permit_sub_type — issue_date is the target's basis per §2.1; zip_code and cd are
+the geography preserved for stage 6 per §2.5; permit_sub_type is the
+residential/commercial split, also stage 6; permit_nbr is the unique key for
+duplicate detection at the era seam.
+
+**2026-09-02** — Socrata returns 1,000 rows silently by default; use explicit
+$limit — row counts verified in pandas against server-side count(*): 148,630
+(5m3t-xjex) and 91,571 (67is-svtd), both exact. No hidden ceiling found.
 ---
 
 ## Pending decisions
@@ -85,5 +101,9 @@ maintained tables may differ in column names, date formats, and permit-type voca
 ## Weekly checkpoints
 
 **Format:** `YYYY-MM-DD - hours - what was finished`
+
+2026-09-02 - <7> - repo created and pushed, conda env with Python 3.12, week-one packages installed, charter and decision log committed, data/ gitignored
+2026-09-02 - <2> - HVAC filter vocabulary confirmed both eras, five-column
+pull designed, full row counts verified in pandas, explore.ipynb created
 
 <!-- append one line per week here -->
