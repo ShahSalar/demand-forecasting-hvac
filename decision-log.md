@@ -87,6 +87,18 @@ duplicate detection at the era seam.
 **2026-09-02** — Socrata returns 1,000 rows silently by default; use explicit
 $limit — row counts verified in pandas against server-side count(*): 148,630
 (5m3t-xjex) and 91,571 (67is-svtd), both exact. No hidden ceiling found.
+
+**2026-09-03** — Era seam verified clean at the row level — 5m3t-xjex spans
+2010-01-03 to 2019-12-31, 67is-svtd spans 2020-01-01 to 2026-08-29. No date
+overlap, no rows outside either table's stated era, no rows dated after today.
+Zero nulls in issue_date and permit_nbr in both tables; zero duplicate
+permit_nbr within either table. Charter §6 seam inspection item closed at the
+row level; visual inspection of the plotted series still pending.
+
+**2026-09-03** — Notebook outputs committed rather than stripped — raw data is
+gitignored, so a stripped notebook cannot be re-run from the repo and the
+outputs are the only record of what was found. Revisit once plots are added:
+embedded images bloat the file and produce noisy diffs.
 ---
 
 ## Pending decisions
@@ -105,5 +117,8 @@ $limit — row counts verified in pandas against server-side count(*): 148,630
 2026-09-02 - <7> - repo created and pushed, conda env with Python 3.12, week-one packages installed, charter and decision log committed, data/ gitignored
 2026-09-02 - <2> - HVAC filter vocabulary confirmed both eras, five-column
 pull designed, full row counts verified in pandas, explore.ipynb created
+2026-09-03 - <3> - issue_date parsed to datetime on both era tables, date
+ranges and null counts verified, permit_nbr uniqueness confirmed per table,
+tables concatenated to 240,201 rows
 
 <!-- append one line per week here -->

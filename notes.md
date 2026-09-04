@@ -30,14 +30,17 @@ things still in the air.
 
 ## Open questions
 
-- `issue_date` arrives from the Socrata API as a string, not a datetime.
-  Needs `pd.to_datetime` before any weekly bucketing can happen.
+- Cross-table `permit_nbr` duplicate check not yet run on the combined
+  frame (`whole_f`, 240,201 rows). Each table is internally unique and the
+  date ranges don't overlap, so zero is expected — but a collision *across*
+  tables hasn't been tested. Last unverified assumption before the weekly
+  series.
 
-- Future issue dates in `67is-svtd` (2020–Present). Saw `2026-04-28` in the
-  first five rows; today is 2026-09-02. Cause unknown. Check how many rows are
-  dated after today and what they look like before building the weekly series.
+- `CD` nulls: 113 in `5m3t-xjex`, 335 in `67is-svtd`. `ZIP_code` nulls: 13
+  and 2. Negligible against 240k rows and both columns are stage-6 only, so
+  not a problem now. Decide how to handle before any geographic split.
 
 ## Next session
 
-- Walk through `explore.ipynb` line by line — understand the fetch code rather
-  than just having it work.
+- Walk through `explore.ipynb` line by line — understand the fetch code
+  rather than just having it work.
