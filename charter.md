@@ -306,3 +306,6 @@ Name these before a reader finds them.
 - Coverage is City of LA only, not Ventura or Orange County
 - Seasonal-naive does not degrade with horizon while real models do, so the gap narrows
   as horizon grows
+- The 2020–present table is live, so row counts and the series end date depend on
+  the pull date; results are reproducible only against a stated pull date, and the
+  final week is always partial
