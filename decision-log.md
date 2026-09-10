@@ -99,6 +99,11 @@ row level; visual inspection of the plotted series still pending.
 gitignored, so a stripped notebook cannot be re-run from the repo and the
 outputs are the only record of what was found. Revisit once plots are added:
 embedded images bloat the file and produce noisy diffs.
+
+**2026-09-09** — Ended up checking if the seam was clean. Used a line graph from '2019-08':'2020-03' to see if there would be a jump in the data after there was a new data set introduced. In Dec it was nearing 300, by the end of Jan it was 300+, in Feb it was around 390. In the graph there was a huge drop around 2019-2020 ish but it was during March time and not Janaury and had nothing to do with the actual data. The huge crash was due to Covid-19.
+**2026-09-09** — Transformed the data series from one permit per row to a weekly series built. Ended up looking at the start and the end of the series to cut of partial weeks. Ended up dropping 2010-01-03 because it was a partial week only including Sunday. Ended up keeping 2026-09-06 because it is true that it did not have any record for Sunday specifically but that is the same for all other weeks as well. Also I ended making all the week end at Sunday. Meaning Starting from Monday until Sunday is what we look at. I got a result of 870 clean weeks.
+
+
 ---
 
 ## Pending decisions
@@ -120,5 +125,7 @@ pull designed, full row counts verified in pandas, explore.ipynb created
 2026-09-03 - <3> - issue_date parsed to datetime on both era tables, date
 ranges and null counts verified, permit_nbr uniqueness confirmed per table,
 tables concatenated to 240,201 rows
-
+2026-09-03 - <6> - Cross-table permit_nbr uniqueness confirmed on whole_f,
+weekly series built with W-SUN resample, partial weeks resolved (870 weeks),
+era seam inspected visually and confirmed clean
 <!-- append one line per week here -->

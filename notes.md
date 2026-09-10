@@ -30,17 +30,17 @@ things still in the air.
 
 ## Open questions
 
-- Cross-table `permit_nbr` duplicate check not yet run on the combined
-  frame (`whole_f`, 240,201 rows). Each table is internally unique and the
-  date ranges don't overlap, so zero is expected — but a collision *across*
-  tables hasn't been tested. Last unverified assumption before the weekly
-  series.
-
 - `CD` nulls: 113 in `5m3t-xjex`, 335 in `67is-svtd`. `ZIP_code` nulls: 13
   and 2. Negligible against 240k rows and both columns are stage-6 only, so
   not a problem now. Decide how to handle before any geographic split.
 
+- COVID structural break, late March 2020. The series drops hard and takes
+  time to recover. Not a seam artifact — confirmed by plot. Open: whether
+  training folds spanning the break need any handling, or whether it's far
+  enough back to leave alone. Revisit once the baseline is scored.
+
 ## Next session
 
-- Walk through `explore.ipynb` line by line — understand the fetch code
-  rather than just having it work.
+- Compute the seasonal-naive baseline (last data-checkpoint item, due Sep 15).
+- Still outstanding: walk through the fetch code in `explore.ipynb` rather
+  than just having it work.
