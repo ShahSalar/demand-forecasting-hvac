@@ -39,8 +39,24 @@ things still in the air.
   training folds spanning the break need any handling, or whether it's far
   enough back to leave alone. Revisit once the baseline is scored.
 
+- Seasonality check in progress. This is the last of the three §2.1 gate
+  checks (volume and gaps passed 2026-09-10). Plan: a table with months
+  across the top, covering all 16 years. Still unanswered: what goes down
+  the side, and what number goes in each cell. Months get 4 or 5 weekly
+  labels depending on how many Sundays they have, so a monthly total may
+  show a fake pattern.
+
+- Summer 2026 is the highest stretch in the whole series. Not explained yet.
+
 ## Next session
 
-- Compute the seasonal-naive baseline (last data-checkpoint item, due Sep 15).
+- Finish the seasonality check. Next code step: turn `weekly` into a
+  DataFrame with count, year, and month columns (`weekly.index.year` and
+  `weekly.index.month` already tested).
+- Confirm the dataset in the decision log once seasonality passes.
+- Compute the seasonal-naive baseline.
+- Decide whether to revise the success target, and log it. One revision
+  only, before any model is fit.
+- Data checkpoint due Sep 15.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
