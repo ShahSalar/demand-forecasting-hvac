@@ -131,6 +131,8 @@ tables concatenated to 240,201 rows
 weekly series built with W-SUN resample, partial weeks resolved (870 weeks),
 era seam inspected visually and confirmed clean
 2026-09-10 - <3:30> - Checked the gap and checked volume.
+2026-09-11 - <2:30> - weekly_labeled built (count, year, month columns),
+month × year pivot of average weekly counts produced with pivot_table
 
 
 <!-- append one line per week here -->

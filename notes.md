@@ -39,20 +39,24 @@ things still in the air.
   training folds spanning the break need any handling, or whether it's far
   enough back to leave alone. Revisit once the baseline is scored.
 
-- Seasonality check in progress. This is the last of the three §2.1 gate
-  checks (volume and gaps passed 2026-09-10). Plan: a table with months
-  across the top, covering all 16 years. Still unanswered: what goes down
-  the side, and what number goes in each cell. Months get 4 or 5 weekly
-  labels depending on how many Sundays they have, so a monthly total may
-  show a fake pattern.
+- Seasonality check, pivot built. Months down the side, years across the
+  top, cell = average weekly count (`pivot_table`, `aggfunc='mean'`).
+  Average not total, because months hold 4 or 5 weekly labels. Remaining:
+  collapse to one average per month across all 16 years to cancel
+  year-to-year noise, then judge amplitude and whether the peak lands in
+  the same month each year. Last of the three §2.1 gate checks (volume and
+  gaps passed 2026-09-10).
 
 - Summer 2026 is the highest stretch in the whole series. Not explained yet.
 
+- 2025 sits low across the whole column — 187 in January, most months
+  230–270, against 2018 in the 300s. Level question, not seasonality.
+  Sits alongside the unexplained summer 2026 high.
+
 ## Next session
 
-- Finish the seasonality check. Next code step: turn `weekly` into a
-  DataFrame with count, year, and month columns (`weekly.index.year` and
-  `weekly.index.month` already tested).
+- Collapse the pivot to a per-month average across all years (row-wise mean
+  on `pivot`), then read amplitude and peak consistency.
 - Confirm the dataset in the decision log once seasonality passes.
 - Compute the seasonal-naive baseline.
 - Decide whether to revise the success target, and log it. One revision
