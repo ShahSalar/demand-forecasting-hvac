@@ -39,16 +39,13 @@ things still in the air.
   training folds spanning the break need any handling, or whether it's far
   enough back to leave alone. Revisit once the baseline is scored.
 
-- Seasonality check, second half. Amplitude done (23%, logged). Remaining:
-  peak consistency. `peaks = pivot.idxmax(axis=0)` gives the peak month per
-  year: 2010:12, 2011:12, 2012:5, 2013:10, 2014:6, 2015:8, 2016:7, 2017:8,
-  2018:8, 2019:8, 2020:2, 2021:8, 2022:5, 2023:8, 2024:4, 2025:6, 2026:8.
-  Not yet judged. The read: does last year's peak predict this year's —
-  that's the bar, because that's what seasonal-naive does. And are the
-  off-summer years scattered through the sixteen (noise) or bunched at one
-  end (the series behaved differently early on, meaning old data may be
-  teaching an outdated pattern). Note 2010–2013 look unlike 2015–2019.
-  2020:2 is COVID, already logged. Last of the three §2.1 gate checks.
+- Seasonal amplitude may vary by year. 2010–2013 were flat — in 2010 the
+  peak beat the runner-up by ~16 permits in a column near 260 — while later
+  years swing harder. Only those four were examined closely, so "the pattern
+  is clearer from 2014 on" is untested. To settle it: compute the 23%
+  amplitude measure per year instead of once across the whole series, and
+  see whether it trends. Matters because if old years carry a weaker
+  seasonal signal, they may be worth less as training data.
 
 - Summer 2026 is the highest stretch in the whole series. Not explained yet.
 
@@ -62,8 +59,6 @@ things still in the air.
 
 ## Next session
 
-- Judge the `peaks` list and call the seasonality gate pass or fail.
-- Confirm the dataset in the decision log once seasonality passes.
 - Compute the seasonal-naive baseline.
 - Decide whether to revise the success target, and log it. One revision
   only, before any model is fit.

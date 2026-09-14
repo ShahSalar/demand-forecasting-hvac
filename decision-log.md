@@ -121,6 +121,9 @@ no structural change, so August is a real peak and not an artifact of where the 
 ends. General rule applied: missing data distorts an average only when what's missing
 is missing for a reason connected to the thing being measured — unequal denominators
 alone are harmless.
+**2026-09-14** — Seasonality passed on the data set. I set a window from May (5th month) - September (9th month) 12 out of 16 non covid years fit into this pattern. As for 2010-2013 I took a closer look at the table. Those years were just more flat. The peak label was noise, because the columns were flat and idxmax had to pick something. In 2010 the peak beat the runner up by about 16 permits in a column sitting near 260.The data is fine.
+**2026-09-14** — The LADBS mechanical permits Issued series is confirmed as v1's dataset, the three gate checks passed, and the fallback is no longer needed so EIA is dead. Volume 2026-09-10, Gap 2026-09-10, and Seasonality 2026-09-14.
+
 
 ---
 
@@ -152,5 +155,6 @@ month × year pivot of average weekly counts produced with pivot_table
 2026-09-13 - <1> - monthly_avg collapse built, seasonal amplitude computed
 (23%, peak Aug, trough Jan), 2026 partial-year distortion tested and dismissed,
 per-year peak months extracted with idxmax
+2026-09-14 - <1:30> - Full data set confirmation. Seasonality passed. August was found to be the peak month. The lowest month was January. 2010-2013 data was explained.
 
 <!-- append one line per week here -->
