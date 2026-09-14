@@ -39,28 +39,34 @@ things still in the air.
   training folds spanning the break need any handling, or whether it's far
   enough back to leave alone. Revisit once the baseline is scored.
 
-- Seasonality check, pivot built. Months down the side, years across the
-  top, cell = average weekly count (`pivot_table`, `aggfunc='mean'`).
-  Average not total, because months hold 4 or 5 weekly labels. Remaining:
-  collapse to one average per month across all 16 years to cancel
-  year-to-year noise, then judge amplitude and whether the peak lands in
-  the same month each year. Last of the three §2.1 gate checks (volume and
-  gaps passed 2026-09-10).
+- Seasonality check, second half. Amplitude done (23%, logged). Remaining:
+  peak consistency. `peaks = pivot.idxmax(axis=0)` gives the peak month per
+  year: 2010:12, 2011:12, 2012:5, 2013:10, 2014:6, 2015:8, 2016:7, 2017:8,
+  2018:8, 2019:8, 2020:2, 2021:8, 2022:5, 2023:8, 2024:4, 2025:6, 2026:8.
+  Not yet judged. The read: does last year's peak predict this year's —
+  that's the bar, because that's what seasonal-naive does. And are the
+  off-summer years scattered through the sixteen (noise) or bunched at one
+  end (the series behaved differently early on, meaning old data may be
+  teaching an outdated pattern). Note 2010–2013 look unlike 2015–2019.
+  2020:2 is COVID, already logged. Last of the three §2.1 gate checks.
 
 - Summer 2026 is the highest stretch in the whole series. Not explained yet.
 
 - 2025 sits low across the whole column — 187 in January, most months
   230–270, against 2018 in the 300s. Level question, not seasonality.
-  Sits alongside the unexplained summer 2026 high.
+  Sits alongside the unexplained summer 2026 high. Related: collapsing the
+  pivot down the year axis (`mean(axis=0)`, 2026 excluded) gives a 27%
+  spread across years, high 2018, low 2020. Year-to-year level moves more
+  than the seasonal swing does — worth keeping in mind before assuming
+  seasonality is the dominant structure.
 
 ## Next session
 
-- Collapse the pivot to a per-month average across all years (row-wise mean
-  on `pivot`), then read amplitude and peak consistency.
+- Judge the `peaks` list and call the seasonality gate pass or fail.
 - Confirm the dataset in the decision log once seasonality passes.
 - Compute the seasonal-naive baseline.
 - Decide whether to revise the success target, and log it. One revision
   only, before any model is fit.
-- Data checkpoint due Sep 15.
+- Data checkpoint due Sep 15 — Tuesday.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.

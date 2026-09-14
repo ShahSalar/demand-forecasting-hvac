@@ -104,7 +104,23 @@ embedded images bloat the file and produce noisy diffs.
 **2026-09-09** — Transformed the data series from one permit per row to a weekly series built. Ended up looking at the start and the end of the series to cut of partial weeks. Ended up dropping 2010-01-03 because it was a partial week only including Sunday. Ended up keeping 2026-09-06 because it is true that it did not have any record for Sunday specifically but that is the same for all other weeks as well. Also I ended making all the week end at Sunday. Meaning Starting from Monday until Sunday is what we look at. I got a result of 870 clean weeks.
 **2026-09-10** — Gap check passed. Checked the lowest 15 weeks in the data. All of them had an explanation five of them were because of the lock down during Covid-19. The rest are Christmas, Thanksgiving, and New Year weeks which makes sense since there are lower permits are getting issued during those Calendar dates.
 **2026-09-10** — Volume check passed. Also the data set has enough Volume to have high Signal To Noise ratio so the data is easier to model and use to predict things. The mean of the data across the 870 weeks is 276.5 permit (pull date on 9/10/2026).
+**2026-09-13** — Seasonal amplitude measured at 23% — collapsed the month × year
+pivot row-wise to one average per month, then took (max − min) / mean of those 12
+numbers. Peak August, trough January. Expressed as a fraction of the yearly average
+rather than a raw permit count so the figure is interpretable without knowing the
+series level. Note for the write-up: 23% is the gap as a share of the yearly average,
+NOT August being 23% above January. Measure is peak-to-trough range, which depends
+only on the two extreme months and ignores the other ten — acceptable for a 12-point
+seasonal profile, but stated as a known property.
 
+**2026-09-13** — 2026's partial year needs no special handling in the monthly
+collapse — data stops in late August, so the Jan–Aug rows include an unusually high
+2026 while Sep–Dec rows do not. Dropped the 2026 column and recomputed: amplitude
+moved 25% → 23%, peak stayed August, trough stayed January. Two points of movement,
+no structural change, so August is a real peak and not an artifact of where the data
+ends. General rule applied: missing data distorts an average only when what's missing
+is missing for a reason connected to the thing being measured — unequal denominators
+alone are harmless.
 
 ---
 
@@ -133,6 +149,8 @@ era seam inspected visually and confirmed clean
 2026-09-10 - <3:30> - Checked the gap and checked volume.
 2026-09-11 - <2> - weekly_labeled built (count, year, month columns),
 month × year pivot of average weekly counts produced with pivot_table
-
+2026-09-13 - <1> - monthly_avg collapse built, seasonal amplitude computed
+(23%, peak Aug, trough Jan), 2026 partial-year distortion tested and dismissed,
+per-year peak months extracted with idxmax
 
 <!-- append one line per week here -->
