@@ -37,7 +37,21 @@ things still in the air.
 - COVID structural break, late March 2020. The series drops hard and takes
   time to recover. Not a seam artifact — confirmed by plot. Open: whether
   training folds spanning the break need any handling, or whether it's far
-  enough back to leave alone. Revisit once the baseline is scored.
+  enough back to leave alone. Note: excluding COVID weeks from *evaluation*
+  is not an option — dropping weeks the baseline handled badly lowers the
+  bar the model has to clear. Baseline and models score on identical weeks.
+  Any handling would be on the training side only.
+
+- The 42.8 baseline MAE is a whole-series number, computed once over 793
+  weeks. Charter §2.6 defines MASE over identical evaluation windows in the
+  rolling-origin backtest, so the harness will compute a seasonal-naive MAE
+  per fold, and those will not equal 42.8. Open: whether 42.8 is kept as an
+  orienting figure or dropped once the harness exists. Do not compare a
+  fold-scored model against it.
+
+- Series length moves with the pull date — 870 on 2026-09-10, 871 on
+  2026-09-15, since `67is-svtd` is live. Any recorded count needs a pull
+  date attached.
 
 - Seasonal amplitude may vary by year. 2010–2013 were flat — in 2010 the
   peak beat the runner-up by ~16 permits in a column near 260 — while later
@@ -59,9 +73,10 @@ things still in the air.
 
 ## Next session
 
-- Compute the seasonal-naive baseline.
 - Decide whether to revise the success target, and log it. One revision
-  only, before any model is fit.
-- Data checkpoint due Sep 15 — Tuesday.
+  only, before any model is fit. This is the last open item on the Sep 15
+  data checkpoint.
+- Harness milestone due Sep 30: rolling-origin backtest that scores any
+  model, seasonal-naive scored through it.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
