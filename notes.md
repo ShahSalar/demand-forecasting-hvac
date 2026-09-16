@@ -71,12 +71,17 @@ things still in the air.
   than the seasonal swing does — worth keeping in mind before assuming
   seasonality is the dominant structure.
 
+- Year-level drift (27%) exceeds seasonal amplitude (23%), and seasonal-naive
+  cannot track level — it copies last year's level wholesale. This is the
+  basis for suspecting the 0.85 target is soft. Untested. Worth checking once
+  the first real model is scored: how much of the baseline's error is level
+  error rather than seasonal error.
+
 ## Next session
 
-- Decide whether to revise the success target, and log it. One revision
-  only, before any model is fit. This is the last open item on the Sep 15
-  data checkpoint.
 - Harness milestone due Sep 30: rolling-origin backtest that scores any
   model, seasonal-naive scored through it.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
+- Practice notebooks moved to `python-data-exploration` repo; `pull.rebase`
+  left unset here, `--no-rebase` used per-pull.

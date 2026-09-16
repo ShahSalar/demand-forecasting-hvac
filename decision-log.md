@@ -124,7 +124,7 @@ alone are harmless.
 **2026-09-14** — Seasonality passed on the data set. I set a window from May (5th month) - September (9th month) 12 out of 16 non covid years fit into this pattern. As for 2010-2013 I took a closer look at the table. Those years were just more flat. The peak label was noise, because the columns were flat and idxmax had to pick something. In 2010 the peak beat the runner up by about 16 permits in a column sitting near 260.The data is fine.
 **2026-09-14** — The LADBS mechanical permits Issued series is confirmed as v1's dataset, the three gate checks passed, and the fallback is no longer needed so EIA is dead. Volume 2026-09-10, Gap 2026-09-10, and Seasonality 2026-09-14.
 **2026-09-16** — Computed the baseline MAE of our actual data. The baseline MAE ended up being 42.8 permits on average miss on the data, this was pulled on 793 weeks. The reason why not all 871 weeks was used is because the first year had nothing to compare to so no calculation could be done. The last 26 weeks are saved for one last run to test out the model. All this was pulled on 2026-09-15. Every model in this project divided by it to score it. A model needs to be under 36.4 permits to hit a MASE of .85 which would pass. This number was calculated based on season-naive .shift(52).
-
+**2026-09-16** — The date, that the one permitted revision was used and the target left unchanged, and the reason. The reason is the part that matters — something to the effect that the data revealed a mechanism (year-to-year level drift exceeding seasonal amplitude, which seasonal-naive can't track) suggesting 0.85 may be soft, but a mechanism isn't a measurement, and revising on an unmeasured hypothesis is worse than keeping a target locked before results existed. Then state it's fixed: no further revision permitted, including after model scores.
 
 ---
 
@@ -158,6 +158,6 @@ month × year pivot of average weekly counts produced with pivot_table
 per-year peak months extracted with idxmax
 2026-09-14 - <1:30> - Full data set confirmation. Seasonality passed. August was found to be the peak month. The lowest month was January. 2010-2013 data was explained.
 2026-09-16 - <2:30> - Found the baseline MAE.
-
+2026-09-16 - <2:15> - Today you computed the baseline MAE, made the target decision, and sorted the repo split.
 
 <!-- append one line per week here -->
