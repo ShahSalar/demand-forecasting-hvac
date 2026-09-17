@@ -84,4 +84,4 @@ things still in the air.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
 - Practice notebooks moved to `python-data-exploration` repo; `pull.rebase`
-  left unset here, `--no-rebase` used per-pull.
+  left unset here, `--no-rebase` used per-pull.con
