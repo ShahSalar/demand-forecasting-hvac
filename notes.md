@@ -51,7 +51,18 @@ things still in the air.
 
 - Series length moves with the pull date — 870 on 2026-09-10, 871 on
   2026-09-15, since `67is-svtd` is live. Any recorded count needs a pull
-  date attached.
+  date attached. Origins are now pinned by date so this no longer moves the
+  folds, but it does move `used_set`'s length.
+
+- Pinned origins mean the backtest stops seeing new data as the series
+  grows. Accepted deliberately for comparability across model runs. Open:
+  whether to re-pin once before the December write-up so the reported
+  numbers aren't scored on a window that's months stale by then.
+
+- One week sits unused at the end of `used_set`. Fold 12's test ends
+  2026-03-08, `used_set` ends 2026-03-15. 845 rows doesn't divide evenly
+  around 12 folds stepped 4, so something has to not line up. Not a bug.
+  Recorded so it isn't rediscovered as one.
 
 - Seasonal amplitude may vary by year. 2010–2013 were flat — in 2010 the
   peak beat the runner-up by ~16 permits in a column near 260 — while later
@@ -79,9 +90,15 @@ things still in the air.
 
 ## Next session
 
+- Pick up at: the fold loop runs and slices correctly but returns nothing.
+  Next question is what each pass should hand back so the results can be
+  sliced by horizon 1–6 at the end. Design decision, not written yet.
 - Harness milestone due Sep 30: rolling-origin backtest that scores any
   model, seasonal-naive scored through it.
+- `explore.ipynb` is getting crowded — dead cells, execution counts in the
+  150s. Decide whether the harness lives here or in its own notebook before
+  writing the scoring code.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
 - Practice notebooks moved to `python-data-exploration` repo; `pull.rebase`
-  left unset here, `--no-rebase` used per-pull.con
+  left unset here, `--no-rebase` used per-pull.
