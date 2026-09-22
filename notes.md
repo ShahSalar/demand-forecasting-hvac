@@ -50,19 +50,16 @@ things still in the air.
   fold-scored model against it.
 
 - Series length moves with the pull date — 870 on 2026-09-10, 871 on
-  2026-09-15, since `67is-svtd` is live. Any recorded count needs a pull
-  date attached. Origins are now pinned by date so this no longer moves the
-  folds, but it does move `used_set`'s length.
+  2026-09-15, 872 on 2026-09-21, since `67is-svtd` is live. Any recorded
+  count needs a pull date attached. Origins are pinned by date so this no
+  longer moves the folds, but it does move `used_set`'s length. The saved
+  parquet is a snapshot: re-export it from `explore.ipynb` after every pull,
+  or `backtest.ipynb` reads stale data.
 
 - Pinned origins mean the backtest stops seeing new data as the series
   grows. Accepted deliberately for comparability across model runs. Open:
   whether to re-pin once before the December write-up so the reported
   numbers aren't scored on a window that's months stale by then.
-
-- One week sits unused at the end of `used_set`. Fold 12's test ends
-  2026-03-08, `used_set` ends 2026-03-15. 845 rows doesn't divide evenly
-  around 12 folds stepped 4, so something has to not line up. Not a bug.
-  Recorded so it isn't rediscovered as one.
 
 - Seasonal amplitude may vary by year. 2010–2013 were flat — in 2010 the
   peak beat the runner-up by ~16 permits in a column near 260 — while later
@@ -90,14 +87,18 @@ things still in the air.
 
 ## Next session
 
-- Pick up at: the fold loop runs and slices correctly but returns nothing.
-  Next question is what each pass should hand back so the results can be
-  sliced by horizon 1–6 at the end. Design decision, not written yet.
+- Pick up at: finish the standard table contract (charter §4) on the saved
+  file. Rename column `0` → `y` in `explore.ipynb` (if not done), then add
+  `ds` as a real column (currently the index) and a `unique_id` column.
+  Re-export to `data/weekly_hvac_permits.parquet`.
+- Then in `backtest.ipynb`: rebuild `used_set`, the pinned origins, and the
+  fold loop from the parquet file (they currently live in `explore.ipynb`).
+- Then: each loop pass builds a small table of 6 rows and appends it to a
+  list; after the loop, stack the 12 into one table (72 rows). Columns:
+  fold, date, horizon, actual, baseline guess. Model guess column added
+  later. Find the pandas function that stacks a list of DataFrames.
 - Harness milestone due Sep 30: rolling-origin backtest that scores any
   model, seasonal-naive scored through it.
-- `explore.ipynb` is getting crowded — dead cells, execution counts in the
-  150s. Decide whether the harness lives here or in its own notebook before
-  writing the scoring code.
 - Still outstanding: walk through the fetch code in `explore.ipynb` rather
   than just having it work.
 - Practice notebooks moved to `python-data-exploration` repo; `pull.rebase`
