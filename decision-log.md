@@ -130,6 +130,9 @@ alone are harmless.
 **2026-09-21** — Backtest harness lives in its own notebook, `backtest.ipynb`. explore.ipynb was for checking the data and is crowded; the harness is building, so it gets its own place.
 **2026-09-21** — Backtest results stored in long format: one row per fold × predicted week, columns fold, date, horizon, actual, baseline guess. Baseline guess sits as a column on the same rows as the model's, not a separate table, so no merge is needed and the two can't misalign. Enforces 2.7's identical-weeks rule by construction. Each fold's 6 rows appended to a list, stacked once after the loop.
 **2026-09-21** — Weekly series column renamed from `0` to `y` per charter 4 standard table contract. `ds` as a column and `unique_id` still to add.
+**2026-09-22** — `ds` and `unique_id` added; charter §4 standard table contract complete. Parquet re-exported: 872 rows, last week 2026-09-20. `unique_id` is one value (`la_hvac`) for now — forecasting libraries require it, and stage-6 subtypes become extra rows instead of new plumbing.
+**2026-09-22** — `used_set` defined by count from the end (last 26 dropped by position), not a hardcoded length or date — the holdout is a rule ("final 26 weeks"), and the series grows every pull. A hardcoded number would keep running while the holdout silently changed size.
+**2026-09-22** — Origins rebuilt inside `backtest.ipynb` rather than saved to parquet — save data, write decisions. The weekly series is expensive to regenerate; 12 chosen dates are not, and they belong where they're used. Origins cell in `explore.ipynb` to be deleted once the backtest loop runs.
 
 ---
 
@@ -166,4 +169,5 @@ per-year peak months extracted with idxmax
 2026-09-15 - <2:30> - seasonal-naive baseline built with shift(52), MAE computed at 42.8 permits over 793 weeks (871 less 52 unguessable and 26 holdout), success target revision used and declined, practice notebooks split out to python-data-exploration repo
 2026-09-17 - <5> - Fold origins pinned, fold loop built, train/test slicing verified across all 12.
 2026-09-21 - <3> - results table design settled, weekly series exported to parquet and reloaded in new backtest.ipynb, index dtype verified, column renamed to y
+2026-09-22 - <3> - table contract finished (ds, unique_id), parquet re-exported and verified in backtest, used_set and origins rebuilt in backtest.ipynb, training slice started
 <!-- append one line per week here -->

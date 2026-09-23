@@ -85,21 +85,37 @@ things still in the air.
   the first real model is scored: how much of the baseline's error is level
   error rather than seasonal error.
 
+- Origins are logged as pinned by date, but the code picks them by
+  position (793:838:4). Same result only as long as the series start
+  never moves. If the first week ever changes (adding the pre-2010
+  table, dropping a week at the start), every origin shifts silently.
+  Open: keep positions, or type the 12 dates directly so they
+  can't drift.
+
 ## Next session
 
-- Pick up at: finish the standard table contract (charter §4) on the saved
-  file. Rename column `0` → `y` in `explore.ipynb` (if not done), then add
-  `ds` as a real column (currently the index) and a `unique_id` column.
-  Re-export to `data/weekly_hvac_permits.parquet`.
-- Then in `backtest.ipynb`: rebuild `used_set`, the pinned origins, and the
-  fold loop from the parquet file (they currently live in `explore.ipynb`).
-- Then: each loop pass builds a small table of 6 rows and appends it to a
-  list; after the loop, stack the 12 into one table (72 rows). Columns:
-  fold, date, horizon, actual, baseline guess. Model guess column added
-  later. Find the pandas function that stacks a list of DataFrames.
-- Harness milestone due Sep 30: rolling-origin backtest that scores any
-  model, seasonal-naive scored through it.
-- Still outstanding: walk through the fetch code in `explore.ipynb` rather
-  than just having it work.
-- Practice notebooks moved to `python-data-exploration` repo; `pull.rebase`
-  left unset here, `--no-rebase` used per-pull.
+- Table contract done: parquet has `ds`, `y`, `unique_id`, 872 rows,
+  last week 2026-09-20. `backtest.ipynb` reads it clean.
+- In `backtest.ipynb` so far: `used_set` = last 26 dropped (846 rows,
+  ends 2026-03-22). `origins` = the `ds` column at positions 793:838:4,
+  12 dates, 2025-03-23 to 2026-01-25, matches explore.
+- Pick up at: the training slice. Mask on `ds` compared to origin, then
+  feed the mask into `.loc`. Built the mask last time but never applied
+  it. Test on ONE origin (`origins.iloc[0]`) before looping.
+- Decide `<` vs `<=`. explore used `.loc[:origin]`, which includes the
+  origin week. Pick the one that matches and say why.
+- Predict before running: last training date and row count for
+  origin 2025-03-23.
+- Then: the answer-key slice. Old code used `index.get_loc(origin)`,
+  which breaks now that the index is a counter.
+- Then: results table. Each pass builds 6 rows, append to list, stack
+  the 12 into 72 rows. Columns: fold, date, horizon, actual, baseline
+  guess. Find the pandas function that stacks a list of DataFrames.
+- Small fixes in backtest: swap cell `[3]` (`index.dtype`, stale check)
+  for `.dtypes`. Change `used_set` from plain brackets to `.iloc[:-26]`.
+- Once backtest has the origins, delete the origins cell in explore.
+  One decision, one place.
+- Harness milestone due Sep 30.
+- Still outstanding: walk through the fetch code in `explore.ipynb`.
+- Practice notebooks moved to `python-data-exploration` repo;
+  `pull.rebase` left unset here, `--no-rebase` used per-pull.
