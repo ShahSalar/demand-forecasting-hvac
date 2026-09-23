@@ -133,7 +133,7 @@ alone are harmless.
 **2026-09-22** — `ds` and `unique_id` added; charter §4 standard table contract complete. Parquet re-exported: 872 rows, last week 2026-09-20. `unique_id` is one value (`la_hvac`) for now — forecasting libraries require it, and stage-6 subtypes become extra rows instead of new plumbing.
 **2026-09-22** — `used_set` defined by count from the end (last 26 dropped by position), not a hardcoded length or date — the holdout is a rule ("final 26 weeks"), and the series grows every pull. A hardcoded number would keep running while the holdout silently changed size.
 **2026-09-22** — Origins rebuilt inside `backtest.ipynb` rather than saved to parquet — save data, write decisions. The weekly series is expensive to regenerate; 12 chosen dates are not, and they belong where they're used. Origins cell in `explore.ipynb` to be deleted once the backtest loop runs.
-
+**2026-09-23** — All of the origins stay picked by position (793:838:4). Made decision on keeping 2010-01-10 where our data starts. The reason why these stay the same because the start date chance of changing is extremely low. The chances are low because the 2010-2019 data set is not a live data set. The is a small chance of LADBS updating the table, or adding the before 2010 table on their, or the partial week rule changes. This clarifies 9/17 decision log further. 9/17 says that origins are picked by date, but they are actually picked by position, we would only get these exact dates if the data starts at 2010-01-10.
 ---
 
 ## Pending decisions
@@ -170,4 +170,5 @@ per-year peak months extracted with idxmax
 2026-09-17 - <5> - Fold origins pinned, fold loop built, train/test slicing verified across all 12.
 2026-09-21 - <3> - results table design settled, weekly series exported to parquet and reloaded in new backtest.ipynb, index dtype verified, column renamed to y
 2026-09-22 - <3> - table contract finished (ds, unique_id), parquet re-exported and verified in backtest, used_set and origins rebuilt in backtest.ipynb, training slice started
+2026-09-23 - <2> - Reviewed project and code build. Made decision on keeping 2010-01-10 where our data starts. Went over functions like rename, reset_index, rename_axis. Terms like broadcasting and porting. Also went through the for loop in explore.ipynb. The rule save data and write decisions. Also learned more about VS Code vs Kernel. iloc vs loc. Also looping over dict, dataframe, and series.
 <!-- append one line per week here -->

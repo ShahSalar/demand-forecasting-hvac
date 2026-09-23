@@ -85,13 +85,6 @@ things still in the air.
   the first real model is scored: how much of the baseline's error is level
   error rather than seasonal error.
 
-- Origins are logged as pinned by date, but the code picks them by
-  position (793:838:4). Same result only as long as the series start
-  never moves. If the first week ever changes (adding the pre-2010
-  table, dropping a week at the start), every origin shifts silently.
-  Open: keep positions, or type the 12 dates directly so they
-  can't drift.
-
 ## Next session
 
 - Table contract done: parquet has `ds`, `y`, `unique_id`, 872 rows,
@@ -119,3 +112,17 @@ things still in the air.
 - Still outstanding: walk through the fetch code in `explore.ipynb`.
 - Practice notebooks moved to `python-data-exploration` repo;
   `pull.rebase` left unset here, `--no-rebase` used per-pull.
+
+## Next review
+
+Carried over from the 2026-09-23 review. Bring these up when a review
+session is asked for.
+
+- `:` vs `=` — revisit briefly (keyword argument, dict pair, slice, block).
+- Vectorization — what it is, why pandas avoids row loops.
+- Boolean masks — what they are, how they go into `.loc`, why they
+  replaced the date slice.
+- `<` vs `<=` and data leakage — why an off-by-one at the origin can let
+  the model see the answer.
+- The checking habit — predict before running; check first row, last
+  row, count, dtypes. Silent wrong answers came up four times on 09-22.
