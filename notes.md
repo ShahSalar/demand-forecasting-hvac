@@ -51,8 +51,8 @@ things still in the air.
 
 - Series length moves with the pull date — 870 on 2026-09-10, 871 on
   2026-09-15, 872 on 2026-09-21, since `67is-svtd` is live. Any recorded
-  count needs a pull date attached. Origins are pinned by date so this no
-  longer moves the folds, but it does move `used_set`'s length. The saved
+  count needs a pull date attached. Origins are pinned by position so this
+  no longer moves the folds, but it does move `used_set`'s length. The saved
   parquet is a snapshot: re-export it from `explore.ipynb` after every pull,
   or `backtest.ipynb` reads stale data.
 
@@ -87,42 +87,57 @@ things still in the air.
 
 ## Next session
 
-- Table contract done: parquet has `ds`, `y`, `unique_id`, 872 rows,
-  last week 2026-09-20. `backtest.ipynb` reads it clean.
-- In `backtest.ipynb` so far: `used_set` = last 26 dropped (846 rows,
-  ends 2026-03-22). `origins` = the `ds` column at positions 793:838:4,
-  12 dates, 2025-03-23 to 2026-01-25, matches explore.
-- Pick up at: the training slice. Mask on `ds` compared to origin, then
-  feed the mask into `.loc`. Built the mask last time but never applied
-  it. Test on ONE origin (`origins.iloc[0]`) before looping.
-- Decide `<` vs `<=`. explore used `.loc[:origin]`, which includes the
-  origin week. Pick the one that matches and say why.
-- Predict before running: last training date and row count for
-  origin 2025-03-23.
-- Then: the answer-key slice. Old code used `index.get_loc(origin)`,
-  which breaks now that the index is a counter.
-- Then: results table. Each pass builds 6 rows, append to list, stack
-  the 12 into 72 rows. Columns: fold, date, horizon, actual, baseline
-  guess. Find the pandas function that stacks a list of DataFrames.
+- Fold loop in `backtest.ipynb` runs clean, no warnings. `folds` is a
+  list of 12 DataFrames, 6 rows each. Columns: ds, y, unique_id,
+  baseline, fold (1–12), horizon (1–6). `folds[-1]` checked: 838–843,
+  2026-02-01 to 2026-03-08, fold 12, horizons 1–6.
+- Pick up at: verify `folds[-1]` baseline. First row is 248; confirm it
+  equals `used_set['y']` at position 786 (838 − 52). One line.
+- Then: stack the 12 into one 72-row table. Find the pandas function
+  that stacks a list of DataFrames. Predict row count and index labels
+  before running.
+- Then: score it. MAE of seasonal-naive by horizon (1–6).
+- Then: wrap it so any model can plug in, not just seasonal-naive
+  (charter §4, model-agnostic harness).
+- `range(12)` is hardcoded in the loop. Decide whether to tie it to
+  `origins` instead.
 - Small fixes in backtest: swap cell `[3]` (`index.dtype`, stale check)
   for `.dtypes`. Change `used_set` from plain brackets to `.iloc[:-26]`.
+  Delete the scratch cells from building fold 1 (`first_slice`,
+  `baseline2`, the list-comprehension cell).
 - Once backtest has the origins, delete the origins cell in explore.
   One decision, one place.
-- Harness milestone due Sep 30.
+- Harness milestone due Sep 30. Remaining: stack, score, wrap.
 - Still outstanding: walk through the fetch code in `explore.ipynb`.
 - Practice notebooks moved to `python-data-exploration` repo;
   `pull.rebase` left unset here, `--no-rebase` used per-pull.
 
 ## Next review
 
-Carried over from the 2026-09-23 review. Bring these up when a review
-session is asked for.
+Doing this in the same chat as 2026-09-23. Covers both the carried-over
+items and what came up while building the fold loop.
 
 - `:` vs `=` — revisit briefly (keyword argument, dict pair, slice, block).
 - Vectorization — what it is, why pandas avoids row loops.
+  Example: the 12-fold loop is one loop, not two. Slices and
+  .tolist() fill all 6 rows at once, so no inner row loop.
 - Boolean masks — what they are, how they go into `.loc`, why they
-  replaced the date slice.
+  replaced the date slice. A mask must come from the same table it
+  filters.
 - `<` vs `<=` and data leakage — why an off-by-one at the origin can let
   the model see the answer.
+- `.loc` vs `.iloc` — label vs position. Why `origins.loc[0]` fails
+  (labels are 793, 797…). Why `origins.index[0]` uses plain brackets
+  (an Index is list-like, no `.loc`/`.iloc`).
+- Index alignment — assigning a Series into a column matches by label,
+  so 742–747 onto 794–799 gave all NaN. `.tolist()` strips the labels.
+- MASE — what it is, the formula (MAE_model ÷ MAE_seasonal_naive),
+  why absolute value, and what 0.85 means in one plain sentence.
+- Seasonal-naive leakage rule — season length vs horizon, the 60-week
+  example.
+- Counting — 52 weeks is 364 days, not a year. Positions 0–793 is 794
+  rows. The 6 weeks after an origin end 6 weeks after the origin, not
+  after the first test week.
+- List vs DataFrame — why `folds` is a list of 12 (not 72) until stacked.
 - The checking habit — predict before running; check first row, last
   row, count, dtypes. Silent wrong answers came up four times on 09-22.

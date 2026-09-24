@@ -134,6 +134,9 @@ alone are harmless.
 **2026-09-22** — `used_set` defined by count from the end (last 26 dropped by position), not a hardcoded length or date — the holdout is a rule ("final 26 weeks"), and the series grows every pull. A hardcoded number would keep running while the holdout silently changed size.
 **2026-09-22** — Origins rebuilt inside `backtest.ipynb` rather than saved to parquet — save data, write decisions. The weekly series is expensive to regenerate; 12 chosen dates are not, and they belong where they're used. Origins cell in `explore.ipynb` to be deleted once the backtest loop runs.
 **2026-09-23** — All of the origins stay picked by position (793:838:4). Made decision on keeping 2010-01-10 where our data starts. The reason why these stay the same because the start date chance of changing is extremely low. The chances are low because the 2010-2019 data set is not a live data set. The is a small chance of LADBS updating the table, or adding the before 2010 table on their, or the partial week rule changes. This clarifies 9/17 decision log further. 9/17 says that origins are picked by date, but they are actually picked by position, we would only get these exact dates if the data starts at 2010-01-10.
+**2026-09-23** — Decided to use <= at the origin to include it. Because in a fold origin is the last date of that folds training slice.
+**2026-09-23** — Looked up the positions of the origins using origins.index. The reason we had to look up position becasue the table in back test is build of numbers not dates. Warning though if the table changes from a 0 to up counter and the number is no long 793 the whole thing breaks.
+
 ---
 
 ## Pending decisions
@@ -170,5 +173,6 @@ per-year peak months extracted with idxmax
 2026-09-17 - <5> - Fold origins pinned, fold loop built, train/test slicing verified across all 12.
 2026-09-21 - <3> - results table design settled, weekly series exported to parquet and reloaded in new backtest.ipynb, index dtype verified, column renamed to y
 2026-09-22 - <3> - table contract finished (ds, unique_id), parquet re-exported and verified in backtest, used_set and origins rebuilt in backtest.ipynb, training slice started
-2026-09-23 - <2> - Reviewed project and code build. Made decision on keeping 2010-01-10 where our data starts. Went over functions like rename, reset_index, rename_axis. Terms like broadcasting and porting. Also went through the for loop in explore.ipynb. The rule save data and write decisions. Also learned more about VS Code vs Kernel. iloc vs loc. Also looping over dict, dataframe, and series.
+2026-09-23 - <2:30> - Reviewed project and code build. Made decision on keeping 2010-01-10 where our data starts. Went over functions like rename, reset_index, rename_axis. Terms like broadcasting and porting. Also went through the for loop in explore.ipynb. The rule save data and write decisions. Also learned more about VS Code vs Kernel. iloc vs loc. Also looping over dict, dataframe, and series.
+2026-09-23 - <3:05> - training slice, answer key, and baseline guesses built for fold 1, then looped over all 12 folds.
 <!-- append one line per week here -->
