@@ -114,30 +114,23 @@ things still in the air.
 
 ## Next review
 
-Doing this in the same chat as 2026-09-23. Covers both the carried-over
-items and what came up while building the fold loop.
+Carried over from the 2026-09-29 review. These were covered but still
+shaky. Bring them up when a review session is asked for.
 
-- `:` vs `=` — revisit briefly (keyword argument, dict pair, slice, block).
-- Vectorization — what it is, why pandas avoids row loops.
-  Example: the 12-fold loop is one loop, not two. Slices and
-  .tolist() fill all 6 rows at once, so no inner row loop.
-- Boolean masks — what they are, how they go into `.loc`, why they
-  replaced the date slice. A mask must come from the same table it
-  filters.
-- `<` vs `<=` and data leakage — why an off-by-one at the origin can let
-  the model see the answer.
-- `.loc` vs `.iloc` — label vs position. Why `origins.loc[0]` fails
-  (labels are 793, 797…). Why `origins.index[0]` uses plain brackets
-  (an Index is list-like, no `.loc`/`.iloc`).
-- Index alignment — assigning a Series into a column matches by label,
-  so 742–747 onto 794–799 gave all NaN. `.tolist()` strips the labels.
-- MASE — what it is, the formula (MAE_model ÷ MAE_seasonal_naive),
-  why absolute value, and what 0.85 means in one plain sentence.
-- Seasonal-naive leakage rule — season length vs horizon, the 60-week
-  example.
-- Counting — 52 weeks is 364 days, not a year. Positions 0–793 is 794
-  rows. The 6 weeks after an origin end 6 weeks after the origin, not
-  after the first test week.
-- List vs DataFrame — why `folds` is a list of 12 (not 72) until stacked.
-- The checking habit — predict before running; check first row, last
-  row, count, dtypes. Silent wrong answers came up four times on 09-22.
+- `.iloc[0]` vs `.index[0]` — `origins.iloc[0]` gives the value (the
+  date, 2025-03-23). `origins.index[0]` gives the label (793). The mask
+  needs the date; the answer-key slice needs the number to do +1, +7.
+  Both `.loc` and `.iloc` return values — they differ in how they look
+  it up (label vs position), not in what they return.
+- Broadcasting vs vectorization vs index alignment — three different
+  things. Broadcasting: one value to every row (`fold = 1`).
+  Vectorization: an operation on a whole column at once, no row loop
+  (`ds <= origin`). Index alignment: assigning a Series matches by
+  label, so mismatched labels give silent NaN.
+- Counting dates — 52 weeks is 364 days, so "52 weeks back" lands one
+  day off the calendar date. Every row is a Sunday; a non-Sunday date
+  is always wrong. Count answer-key weeks from the origin (origin + 42
+  days = last week).
+- `len()` on a list vs on an item — `len(folds)` counts boxes (12).
+  `len(folds[0])` counts rows in one box (6). `append` adds a whole
+  table as one item; it doesn't unpack rows.

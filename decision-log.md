@@ -176,3 +176,4 @@ per-year peak months extracted with idxmax
 2026-09-23 - <2:30> - Reviewed project and code build. Made decision on keeping 2010-01-10 where our data starts. Went over functions like rename, reset_index, rename_axis. Terms like broadcasting and porting. Also went through the for loop in explore.ipynb. The rule save data and write decisions. Also learned more about VS Code vs Kernel. iloc vs loc. Also looping over dict, dataframe, and series.
 2026-09-23 - <3:05> - training slice, answer key, and baseline guesses built for fold 1, then looped over all 12 folds.
 <!-- append one line per week here -->
+2026-09-29 - <1:45> - Review Session
