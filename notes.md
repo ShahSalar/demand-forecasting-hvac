@@ -43,11 +43,15 @@ things still in the air.
   Any handling would be on the training side only.
 
 - The 42.8 baseline MAE is a whole-series number, computed once over 793
-  weeks. Charter §2.6 defines MASE over identical evaluation windows in the
-  rolling-origin backtest, so the harness will compute a seasonal-naive MAE
-  per fold, and those will not equal 42.8. Open: whether 42.8 is kept as an
-  orienting figure or dropped once the harness exists. Do not compare a
-  fold-scored model against it.
+  weeks. The harness now gives fold-scored seasonal-naive MAE by horizon
+  (22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8), and as expected none of them
+  equal 42.8. Open: keep 42.8 as an orienting figure in the write-up, or
+  drop it. Never compare a fold-scored model against it.
+
+- Seasonal-naive MAE by horizon humps at h3–h4 (36.8, 35.1) and drops back
+  at h5–h6. Read as small-sample noise (each horizon averages only 12
+  misses), not degradation — seasonal-naive is always exactly 52 weeks back
+  at every horizon. Untested: which specific weeks drive the h3/h4 bump.
 
 - Series length moves with the pull date — 870 on 2026-09-10, 871 on
   2026-09-15, 872 on 2026-09-21, since `67is-svtd` is live. Any recorded
@@ -87,34 +91,48 @@ things still in the air.
 
 ## Next session
 
-- Fold loop in `backtest.ipynb` runs clean, no warnings. `folds` is a
-  list of 12 DataFrames, 6 rows each. Columns: ds, y, unique_id,
-  baseline, fold (1–12), horizon (1–6). `folds[-1]` checked: 838–843,
-  2026-02-01 to 2026-03-08, fold 12, horizons 1–6.
-- Pick up at: verify `folds[-1]` baseline. First row is 248; confirm it
-  equals `used_set['y']` at position 786 (838 − 52). One line.
-- Then: stack the 12 into one 72-row table. Find the pandas function
-  that stacks a list of DataFrames. Predict row count and index labels
-  before running.
-- Then: score it. MAE of seasonal-naive by horizon (1–6).
-- Then: wrap it so any model can plug in, not just seasonal-naive
-  (charter §4, model-agnostic harness).
+- State of `backtest.ipynb`: `folds` (list of 12 DataFrames) stacked with
+  `pd.concat` into `all_folds` — 72 rows, index labels 794–843 with
+  repeats (folds step 4, windows are 6, so neighbors share 2 weeks).
+  `miss` column = `(baseline − y).abs()`. `MAE_horizon` = seasonal-naive
+  MAE by horizon. `target_horizon` = `MAE_horizon * 0.85`. Headline bar at
+  h4 is **29.8** — pass/fail is h4 only, the other five are reported.
+- Seasonal-naive rebuilt from `train` alone, verified in a scratch cell:
+  `train['y'].iloc[-52:-46]`. Fold 1 gives 229 at label 742 (794 − 52);
+  fold 12 gave 248 at 786. Still to do: compare all 6 fold-1 values
+  against fold 1's `baseline` column, not just the first.
+- **Pick up at:** turn that slice into a small seasonal-naive function —
+  takes `train`, returns 6 guesses.
+- Then: wrap the loop into one function — in: a model, out: that model's
+  MAE by horizon (1–6). Run seasonal-naive through it and confirm it gives
+  back the exact same six `MAE_horizon` numbers.
+- `train` is built in the loop but never used — seasonal-naive reaches
+  into `used_set` directly. The wrap fixes this.
+- The loop's mask uses `weekly_hvac_permits` while the answer key uses
+  `used_set`. Works (origins sit before the holdout), but decide on one
+  table when wrapping.
+- `/ len(folds)` in `MAE_horizon` assumes every horizon group has the same
+  number of rows. Find the direct way to average each group.
 - `range(12)` is hardcoded in the loop. Decide whether to tie it to
   `origins` instead.
 - Small fixes in backtest: swap cell `[3]` (`index.dtype`, stale check)
   for `.dtypes`. Change `used_set` from plain brackets to `.iloc[:-26]`.
   Delete the scratch cells from building fold 1 (`first_slice`,
-  `baseline2`, the list-comprehension cell).
+  `baseline2`, the list-comprehension cell) and from 2026-09-29
+  (`train_scratch`, the `.iloc['839']` cell, the old `mean` cells, the
+  `.loc[0]` cell).
+- Decision log, if not already done: seasonal-naive MAE by horizon, h4
+  bar = 29.8, with pull date.
 - Once backtest has the origins, delete the origins cell in explore.
   One decision, one place.
-- Harness milestone due Sep 30. Remaining: stack, score, wrap.
+- Harness milestone due Sep 30. Remaining: wrap only.
 - Still outstanding: walk through the fetch code in `explore.ipynb`.
 - Practice notebooks moved to `python-data-exploration` repo;
   `pull.rebase` left unset here, `--no-rebase` used per-pull.
 
 ## Next review
 
-Carried over from the 2026-09-29 review. These were covered but still
+Carried over from the 2026-09-29 review and session. Covered but still
 shaky. Bring them up when a review session is asked for.
 
 - `.iloc[0]` vs `.index[0]` — `origins.iloc[0]` gives the value (the
@@ -124,9 +142,10 @@ shaky. Bring them up when a review session is asked for.
   it up (label vs position), not in what they return.
 - Broadcasting vs vectorization vs index alignment — three different
   things. Broadcasting: one value to every row (`fold = 1`).
-  Vectorization: an operation on a whole column at once, no row loop
-  (`ds <= origin`). Index alignment: assigning a Series matches by
-  label, so mismatched labels give silent NaN.
+  Vectorization: one operation on every row of a column at once, no row
+  loop (`ds <= origin`, `baseline − y`) — not "every column."
+  Index alignment: assigning a Series matches by label, so mismatched
+  labels give silent NaN.
 - Counting dates — 52 weeks is 364 days, so "52 weeks back" lands one
   day off the calendar date. Every row is a Sunday; a non-Sunday date
   is always wrong. Count answer-key weeks from the origin (origin + 42
@@ -134,3 +153,27 @@ shaky. Bring them up when a review session is asked for.
 - `len()` on a list vs on an item — `len(folds)` counts boxes (12).
   `len(folds[0])` counts rows in one box (6). `append` adds a whole
   table as one item; it doesn't unpack rows.
+- Calling vs naming a function — `pd.concat` with no parentheses hands
+  you the function itself, it doesn't run it. Assigning that to `folds`
+  overwrote the list. Save results under a new name so inputs survive.
+- Stale output — editing a cell doesn't rerun it. Same execution number,
+  or a traceback line that doesn't match the cell's code, means the
+  output is old.
+- Kernel memory — variables stick around after a loop. `train` after the
+  loop is fold 12's, not fold 1's.
+- Indexing errors — `.iloc['839']` fails: `.iloc` needs an integer
+  position, and 839 is a label (it also appears twice in `all_folds`).
+  `.loc[0]` on a DataFrame returns one row, so `train['y']` became a
+  single number and `.iloc` on it threw AttributeError.
+- Negative positions — `[0]` is the first row, `[-1]` the last. The origin
+  is `[-1]` in `train`. h1's guess is 51 rows before the origin → `-52`;
+  h6's is 46 before → `-47`. Slices stop before the end → `-52:-46`.
+- Seasonal-naive doesn't degrade with horizon — the gap between guess and
+  target is always 52 weeks. Real models do degrade, so the model-vs-
+  baseline gap narrows as horizon grows (charter §9).
+- MASE bar — multiply, don't guess-and-divide: 0.85 × 35.08 = 29.8.
+  (30 fails: 30 / 35.08 = 0.855.) MASE is a ratio, not a percent; under
+  1 means the model beat the baseline.
+- The wrap — pass in the **model**, not its guesses, so every model takes
+  the identical test. Seasonal-naive is a student too, run through the
+  same function; its MAE is the denominator for every MASE, forever.

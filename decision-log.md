@@ -136,7 +136,7 @@ alone are harmless.
 **2026-09-23** — All of the origins stay picked by position (793:838:4). Made decision on keeping 2010-01-10 where our data starts. The reason why these stay the same because the start date chance of changing is extremely low. The chances are low because the 2010-2019 data set is not a live data set. The is a small chance of LADBS updating the table, or adding the before 2010 table on their, or the partial week rule changes. This clarifies 9/17 decision log further. 9/17 says that origins are picked by date, but they are actually picked by position, we would only get these exact dates if the data starts at 2010-01-10.
 **2026-09-23** — Decided to use <= at the origin to include it. Because in a fold origin is the last date of that folds training slice.
 **2026-09-23** — Looked up the positions of the origins using origins.index. The reason we had to look up position becasue the table in back test is build of numbers not dates. Warning though if the table changes from a 0 to up counter and the number is no long 793 the whole thing breaks.
-
+**2026-09-29** — Seasonal-naive MAE by horizon (22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8), h4 bar = 29.8 (0.85 × 35.08), pull date 2026-09-22. Used the baseline and subtracted them from the actual to see what the baseline MAE would be for all horizon to then help score future models.
 ---
 
 ## Pending decisions
@@ -177,3 +177,4 @@ per-year peak months extracted with idxmax
 2026-09-23 - <3:05> - training slice, answer key, and baseline guesses built for fold 1, then looped over all 12 folds.
 <!-- append one line per week here -->
 2026-09-29 - <1:45> - Review Session
+2026-09-29 - <2:30> - Folds stacked, MAE scored at all 6 horizons, h4 bar computed, seasonal naive rebuilt from train and verified.
