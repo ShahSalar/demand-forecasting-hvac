@@ -91,49 +91,51 @@ things still in the air.
 
 ## Next session
 
-- State of `backtest.ipynb`: `folds` (list of 12 DataFrames) stacked with
-  `pd.concat` into `all_folds` — 72 rows, index labels 794–843 with
-  repeats (folds step 4, windows are 6, so neighbors share 2 weeks).
-  `miss` column = `(baseline − y).abs()`. `MAE_horizon` = seasonal-naive
-  MAE by horizon. `target_horizon` = `MAE_horizon * 0.85`. Headline bar at
-  h4 is **29.8** — pass/fail is h4 only, the other five are reported.
-- Seasonal-naive rebuilt from `train` alone, verified in a scratch cell:
-  `train['y'].iloc[-52:-46]`. Fold 1 gives 229 at label 742 (794 − 52);
-  fold 12 gave 248 at 786. Still to do: compare all 6 fold-1 values
-  against fold 1's `baseline` column, not just the first.
-- **Pick up at:** turn that slice into a small seasonal-naive function —
-  takes `train`, returns 6 guesses.
-- Then: wrap the loop into one function — in: a model, out: that model's
-  MAE by horizon (1–6). Run seasonal-naive through it and confirm it gives
-  back the exact same six `MAE_horizon` numbers.
-- `train` is built in the loop but never used — seasonal-naive reaches
-  into `used_set` directly. The wrap fixes this.
+- **Harness milestone hit 2026-09-30, on the due date.** Next milestone:
+  first model (degree-day regression) by Oct 20.
+- State of `backtest.ipynb`: `seasonal_naive(train)` takes the full
+  fold `train` table, slices `['y'].iloc[-52:-46]`, returns 6 guesses as a
+  plain list (`.to_list()` strips labels, so no NaN from mismatched index).
+  `score(model)` runs all 12 folds, calls `model(train)` for the guesses,
+  stacks with `pd.concat`, builds `miss`, returns MAE by horizon.
+  `score(seasonal_naive)` reproduces 22.2 / 28.7 / 36.8 / 35.1 / 25.4 /
+  25.8 exactly — regression test passed. Fold 1's 6 guesses also checked
+  against the old `baseline` column: all 6 match.
+- **Pick up at:** `/ len(folds)` in the `MAE_horizon` line. Question left
+  unanswered: what are you actually trying to get for each horizon group?
+  One word. Then find the direct way to get it.
+- The guesses column inside `score()` is still named `baseline`, but it
+  now holds *whatever model's* guesses. Misleading once LightGBM runs
+  through. Rename it. Same for `akey_guesses` (it's guesses, not answer
+  key) and `train_scratch` inside `seasonal_naive` (cosmetic).
+- `score()` returns MAE only. Charter §4 says the harness returns
+  MAE / RMSE / MASE / coverage by horizon. Coverage waits for intervals
+  (build step 8). Decide when to add RMSE and MASE. MASE denominator is
+  always `score(seasonal_naive)`.
 - The loop's mask uses `weekly_hvac_permits` while the answer key uses
   `used_set`. Works (origins sit before the holdout), but decide on one
-  table when wrapping.
-- `/ len(folds)` in `MAE_horizon` assumes every horizon group has the same
-  number of rows. Find the direct way to average each group.
+  table.
 - `range(12)` is hardcoded in the loop. Decide whether to tie it to
   `origins` instead.
 - Small fixes in backtest: swap cell `[3]` (`index.dtype`, stale check)
   for `.dtypes`. Change `used_set` from plain brackets to `.iloc[:-26]`.
-  Delete the scratch cells from building fold 1 (`first_slice`,
-  `baseline2`, the list-comprehension cell) and from 2026-09-29
-  (`train_scratch`, the `.iloc['839']` cell, the old `mean` cells, the
-  `.loc[0]` cell).
-- Decision log, if not already done: seasonal-naive MAE by horizon, h4
-  bar = 29.8, with pull date.
+  Delete scratch cells: from building fold 1 (`first_slice`, `baseline2`,
+  the list-comprehension cell); from 2026-09-29 (`train_scratch`, the
+  `.iloc['839']` cell, the old `mean` cells, the `.loc[0]` cell); from
+  2026-09-30 (`all_folds.iloc[794:800]`, the `.iloc[0:6]` check, the first
+  `seasonal_naive(model)` version). The old standalone loop, concat,
+  `miss`, and `MAE_horizon` cells now live inside `score()` — delete the
+  standalone copies once you trust the function.
 - Once backtest has the origins, delete the origins cell in explore.
   One decision, one place.
-- Harness milestone due Sep 30. Remaining: wrap only.
 - Still outstanding: walk through the fetch code in `explore.ipynb`.
 - Practice notebooks moved to `python-data-exploration` repo;
   `pull.rebase` left unset here, `--no-rebase` used per-pull.
 
 ## Next review
 
-Carried over from the 2026-09-29 review and session. Covered but still
-shaky. Bring them up when a review session is asked for.
+Carried over from the 2026-09-29 and 2026-09-30 sessions. Covered but
+still shaky. Bring them up when a review session is asked for.
 
 - `.iloc[0]` vs `.index[0]` — `origins.iloc[0]` gives the value (the
   date, 2025-03-23). `origins.index[0]` gives the label (793). The mask
@@ -165,6 +167,12 @@ shaky. Bring them up when a review session is asked for.
   position, and 839 is a label (it also appears twice in `all_folds`).
   `.loc[0]` on a DataFrame returns one row, so `train['y']` became a
   single number and `.iloc` on it threw AttributeError.
+  New one: `all_folds.iloc[794:800]` came back **empty, no error** —
+  794 is a label, `.iloc` wants a position, and `all_folds` only has 72
+  rows (positions 0–71). Positions past the end in a slice give nothing.
+- `.iloc[0:6]` to grab fold 1 worked only because fold 1 was stacked
+  first. That's position luck. To get "rows where fold is 1," filter by
+  the `fold` column, same move as the `mask` cell.
 - Negative positions — `[0]` is the first row, `[-1]` the last. The origin
   is `[-1]` in `train`. h1's guess is 51 rows before the origin → `-52`;
   h6's is 46 before → `-47`. Slices stop before the end → `-52:-46`.
@@ -174,6 +182,20 @@ shaky. Bring them up when a review session is asked for.
 - MASE bar — multiply, don't guess-and-divide: 0.85 × 35.08 = 29.8.
   (30 fails: 30 / 35.08 = 0.855.) MASE is a ratio, not a percent; under
   1 means the model beat the baseline.
-- The wrap — pass in the **model**, not its guesses, so every model takes
-  the identical test. Seasonal-naive is a student too, run through the
-  same function; its MAE is the denominator for every MASE, forever.
+- **Interface** — every model follows the same rule: `train` goes in, 6
+  guesses come out. That's what lets one harness score any model.
+- **Higher-order function** — a function that takes another function as
+  an argument. `score(seasonal_naive)`: `score` doesn't care which model
+  it gets, it just calls whatever shows up. Pass in the **model**, not
+  its guesses, so every model takes the identical test.
+- **Model vs data** — inside `score`, `model` is a function, so it's the
+  thing you *call*: `model(train)`. `train` is data, so it goes *inside*
+  the parentheses. Mistakes made today: `model['ds']` (indexing a
+  function like a table) and `seasonal_naive(model)` (flipped). Clue:
+  VS Code grays out a variable that never gets used — gray `train` meant
+  the guesses weren't coming from it.
+- **Regression test** — rebuild something, confirm it gives the old
+  answer. `score(seasonal_naive)` matching the six hand-built MAE numbers
+  proves the wrap is correct before trusting it with a new model.
+- Seasonal-naive is a student too — it runs through the same `score()`.
+  Its MAE is the denominator for every MASE, forever.

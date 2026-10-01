@@ -137,6 +137,10 @@ alone are harmless.
 **2026-09-23** — Decided to use <= at the origin to include it. Because in a fold origin is the last date of that folds training slice.
 **2026-09-23** — Looked up the positions of the origins using origins.index. The reason we had to look up position becasue the table in back test is build of numbers not dates. Warning though if the table changes from a 0 to up counter and the number is no long 793 the whole thing breaks.
 **2026-09-29** — Seasonal-naive MAE by horizon (22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8), h4 bar = 29.8 (0.85 × 35.08), pull date 2026-09-22. Used the baseline and subtracted them from the actual to see what the baseline MAE would be for all horizon to then help score future models.
+**2026-09-30** — Harness complete. `score(model)` runs the 12-fold rolling-origin backtest for any model passed in and returns MAE by
+horizon. Regression test passed: `score(seasonal_naive)` reproduces 22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8 exactly (pull date 2026-09-22, parquet snapshot). Reason: one function means every model takes the identical test, which enforces §2.7's fairness rule by construction. Harness milestone met on its due date.
+**2026-09-30** — Model interface fixed: every model is a function that takes the fold's full `train` table and returns 6 guesses as a plain list. Reason: a list has no index labels, so guesses can't misalign with the answer key and turn into silent NaN. Adding a model now means writing one function that follows this rule (charter §4).
+**2026-09-30** — Seasonal-naive rebuilt to use `train` only, no longer reaching into `used_set`. Reason: a model must only see data up to its fold's origin. Reaching into a bigger table risks seeing the future (data leakage) and makes the baseline play by different rules than the real models.
 ---
 
 ## Pending decisions
@@ -178,3 +182,4 @@ per-year peak months extracted with idxmax
 <!-- append one line per week here -->
 2026-09-29 - <1:45> - Review Session
 2026-09-29 - <2:30> - Folds stacked, MAE scored at all 6 horizons, h4 bar computed, seasonal naive rebuilt from train and verified.
+2026-09-30 - <1:00> - seasonal_naive function built, score(model) wrap built, regression test passed, harness milestone hit on due date.
