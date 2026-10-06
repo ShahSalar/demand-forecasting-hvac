@@ -134,68 +134,91 @@ things still in the air.
 
 ## Next review
 
-Carried over from the 2026-09-29 and 2026-09-30 sessions. Covered but
-still shaky. Bring them up when a review session is asked for.
+Carried over from the 2026-09-29 and 2026-09-30 sessions, trimmed by the
+2026-10-06 review. Only items not yet solid. Each example describes its
+table so it can be reviewed with only this file open.
 
-- `.iloc[0]` vs `.index[0]` — `origins.iloc[0]` gives the value (the
-  date, 2025-03-23). `origins.index[0]` gives the label (793). The mask
-  needs the date; the answer-key slice needs the number to do +1, +7.
-  Both `.loc` and `.iloc` return values — they differ in how they look
-  it up (label vs position), not in what they return.
-- Broadcasting vs vectorization vs index alignment — three different
-  things. Broadcasting: one value to every row (`fold = 1`).
-  Vectorization: one operation on every row of a column at once, no row
-  loop (`ds <= origin`, `baseline − y`) — not "every column."
-  Index alignment: assigning a Series matches by label, so mismatched
-  labels give silent NaN.
-- Counting dates — 52 weeks is 364 days, so "52 weeks back" lands one
-  day off the calendar date. Every row is a Sunday; a non-Sunday date
-  is always wrong. Count answer-key weeks from the origin (origin + 42
-  days = last week).
-- `len()` on a list vs on an item — `len(folds)` counts boxes (12).
-  `len(folds[0])` counts rows in one box (6). `append` adds a whole
-  table as one item; it doesn't unpack rows.
-- Calling vs naming a function — `pd.concat` with no parentheses hands
-  you the function itself, it doesn't run it. Assigning that to `folds`
-  overwrote the list. Save results under a new name so inputs survive.
-- Stale output — editing a cell doesn't rerun it. Same execution number,
-  or a traceback line that doesn't match the cell's code, means the
-  output is old.
-- Kernel memory — variables stick around after a loop. `train` after the
-  loop is fold 12's, not fold 1's.
-- Indexing errors — `.iloc['839']` fails: `.iloc` needs an integer
-  position, and 839 is a label (it also appears twice in `all_folds`).
-  `.loc[0]` on a DataFrame returns one row, so `train['y']` became a
-  single number and `.iloc` on it threw AttributeError.
-  New one: `all_folds.iloc[794:800]` came back **empty, no error** —
-  794 is a label, `.iloc` wants a position, and `all_folds` only has 72
-  rows (positions 0–71). Positions past the end in a slice give nothing.
+- Index alignment — when you assign a Series into a DataFrame column,
+  pandas matches rows by **label**, not by order. Matching labels get
+  the value; no match gets NaN. No error is raised.
+  Example: `all_folds` is 72 rows, labels 794–843 (some repeat).
+  `all_folds.groupby('horizon')['miss'].mean()` is 6 rows, labels 1–6.
+  Assigning it into `all_folds['mean']` matches zero labels → whole
+  column NaN, silently. Store results like that in their own variable.
+
+- Counting dates — every row is a Sunday (weeks labeled by Sunday end).
+  Target week = origin + 7 × horizon days. Origin 2025-03-23, h6 →
+  +42 days → 2025-05-04. A non-Sunday date is always wrong (2025-05-05
+  is a Monday). "52 weeks back" = 364 days, not 365 (365 lands on a
+  Saturday).
+
+- Kernel memory — variables stay in the kernel until overwritten. The
+  fold loop reassigns `train` every pass, so after the loop `train` is
+  fold 12's. `train['y'].iloc[-52:-46]` then starts with 248 (fold 12).
+  Rebuild `train` with `origins.iloc[0]` in the mask and the same slice
+  starts with 229 (fold 1). Same slice, different data — the slice
+  can't tell you which fold you're on; only `train` can.
+
+- Indexing errors — `.iloc` = position (integers, 0 to len−1).
+  `.loc` = label (what's printed on the left).
+  Context: `all_folds` is 72 rows, positions 0–71, labels 794–843.
+  - `all_folds.iloc['839']` → **TypeError** (wrong type of input):
+    `.iloc` only takes integers. `.iloc[839]` would be **IndexError**
+    (position out of range): only 72 positions exist.
+  - `all_folds.iloc[794:800]` → comes back **empty, no error**. 794 is
+    a label, not a position. A *slice* past the end gives nothing
+    instead of erroring — a single position past the end errors.
+  - `all_folds.loc[839]` → works. 839 is a label; it appears twice,
+    so 2 rows come back.
+  - `train = weekly_hvac_permits.loc[0]` then `train['y'].iloc[...]`
+    → **AttributeError** (that thing has no such method): `.loc[0]`
+    returns one row, so `train['y']` is one number, and a number has
+    no `.iloc`.
+  - Related: `used_set.iloc[origins.index[i] + 1 : ...]` feeds a label
+    into `.iloc`. Works only because `used_set`'s labels are a 0-up
+    counter (label 793 = position 793). If they stop matching, it
+    silently grabs the wrong weeks.
+
 - `.iloc[0:6]` to grab fold 1 worked only because fold 1 was stacked
   first. That's position luck. To get "rows where fold is 1," filter by
   the `fold` column, same move as the `mask` cell.
-- Negative positions — `[0]` is the first row, `[-1]` the last. The origin
-  is `[-1]` in `train`. h1's guess is 51 rows before the origin → `-52`;
-  h6's is 46 before → `-47`. Slices stop before the end → `-52:-46`.
-- Seasonal-naive doesn't degrade with horizon — the gap between guess and
-  target is always 52 weeks. Real models do degrade, so the model-vs-
-  baseline gap narrows as horizon grows (charter §9).
-- MASE bar — multiply, don't guess-and-divide: 0.85 × 35.08 = 29.8.
-  (30 fails: 30 / 35.08 = 0.855.) MASE is a ratio, not a percent; under
-  1 means the model beat the baseline.
+
+- MAE and MASE — answer from scratch next time.
+  - MAE: each week's miss = |guess − actual|. MAE = average of those
+    misses, in permits. Lower = better.
+  - MASE: model MAE ÷ seasonal-naive MAE, same horizon, same folds.
+    A ratio, not a percent. Under 1 = beat the baseline; over 1 = lost.
+    1.10 = misses 10% bigger = 10% worse.
+  - Project rule: MASE ≤ 0.85 at h4. Seasonal-naive h4 MAE = 35.08.
+    Bar = 0.85 × 35.08 = 29.8 — the **highest** MAE that passes
+    (ceiling). MAE 30 fails: 30 / 35.08 = 0.855 > 0.85. Multiply to
+    get the bar; don't guess-and-divide.
+  - Practice: a model scores MAE 28 at h4. What's its MASE? Pass?
+    Another scores MASE 1.20 — better or worse than baseline, by how much?
+
 - **Interface** — every model follows the same rule: `train` goes in, 6
   guesses come out. That's what lets one harness score any model.
+
 - **Higher-order function** — a function that takes another function as
   an argument. `score(seasonal_naive)`: `score` doesn't care which model
   it gets, it just calls whatever shows up. Pass in the **model**, not
   its guesses, so every model takes the identical test.
+
 - **Model vs data** — inside `score`, `model` is a function, so it's the
   thing you *call*: `model(train)`. `train` is data, so it goes *inside*
-  the parentheses. Mistakes made today: `model['ds']` (indexing a
-  function like a table) and `seasonal_naive(model)` (flipped). Clue:
-  VS Code grays out a variable that never gets used — gray `train` meant
-  the guesses weren't coming from it.
+  the parentheses. Mistakes made: `model['ds']` (indexing a function
+  like a table) and `seasonal_naive(model)` (flipped). Clue: VS Code
+  grays out a variable that never gets used — gray `train` meant the
+  guesses weren't coming from it.
+
 - **Regression test** — rebuild something, confirm it gives the old
   answer. `score(seasonal_naive)` matching the six hand-built MAE numbers
   proves the wrap is correct before trusting it with a new model.
-- Seasonal-naive is a student too — it runs through the same `score()`.
-  Its MAE is the denominator for every MASE, forever.
+
+- The wrap's output is MAE at **all six horizons** (1–6), not just h4
+  MASE. Charter requires every horizon reported. MASE is a separate
+  step after.
+
+- Seasonal-naive is a **student**, not the teacher. It runs through the
+  same `score()` as every model. Its MAE is the bottom half of every
+  MASE, forever — no baseline, no MASE.
