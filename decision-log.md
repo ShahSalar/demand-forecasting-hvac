@@ -185,3 +185,4 @@ per-year peak months extracted with idxmax
 2026-09-30 - <1:00> - seasonal_naive function built, score(model) wrap built, regression test passed, harness milestone hit on due date.
 2026-10-06 - <1:40> - Review Session
 2026-10-06 - <:40> - Review Session
+2026-10-06 - <0:30> - score() cleaned: .mean() for MAE, guesses column renamed to prediction, fold count tied to origins; regression test passed after catching an 11-fold bug.
