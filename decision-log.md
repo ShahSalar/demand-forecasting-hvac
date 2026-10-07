@@ -141,6 +141,9 @@ alone are harmless.
 horizon. Regression test passed: `score(seasonal_naive)` reproduces 22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8 exactly (pull date 2026-09-22, parquet snapshot). Reason: one function means every model takes the identical test, which enforces §2.7's fairness rule by construction. Harness milestone met on its due date.
 **2026-09-30** — Model interface fixed: every model is a function that takes the fold's full `train` table and returns 6 guesses as a plain list. Reason: a list has no index labels, so guesses can't misalign with the answer key and turn into silent NaN. Adding a model now means writing one function that follows this rule (charter §4).
 **2026-09-30** — Seasonal-naive rebuilt to use `train` only, no longer reaching into `used_set`. Reason: a model must only see data up to its fold's origin. Reaching into a bigger table risks seeing the future (data leakage) and makes the baseline play by different rules than the real models.
+**2026-10-06** — Change the hardcoded range(12) to len(origins) in my for loop incase if something changes with out origins list it doesnt have to get updated inside of two places.
+**2026-10-07** — In my function score I ended grabbing numbers from used_set for both train and akey. This was because since the indexing of both tables was the same and the difference is that used_set is not holding the last 26 weeks. Why I ended up choosing used set was because of holdout contamination. I did not want to touch those numbers until the very end. The weeks are the same either way because used_set was built from weekly_hvac_permits. Scores unchaged. 
+**2026-10-07** — Ended up using score(seasonal_naive) to give the MAE for our target horizon. Since we have proved that out function is working its better to pass the model into it rather than a separate standalone calculation. baseline_MAE also will be used in the future for MASE calculations.
 ---
 
 ## Pending decisions
@@ -186,3 +189,4 @@ per-year peak months extracted with idxmax
 2026-10-06 - <1:40> - Review Session
 2026-10-06 - <:40> - Review Session
 2026-10-06 - <0:30> - score() cleaned: .mean() for MAE, guesses column renamed to prediction, fold count tied to origins; regression test passed after catching an 11-fold bug.
+2026-10-07 - <0:35> - score() slices train and answer key from used_set; scratch cells deleted; pass bar rebuilt from score(seasonal_naive);
