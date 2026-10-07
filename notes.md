@@ -103,34 +103,9 @@ things still in the air.
 ## Next session
 
 - **First model (degree-day regression) due Oct 20.** Harness done Sep 30.
-- **OWED: decision log entries from 2026-10-07 (weather).** Write these
-  first thing:
-  1. Weather input for all 6 forecast weeks = climatology. Deviates from
-     charter §8. Reason: Open-Meteo Historical Forecast API stitches the
-     first few hours of each run (close to observed weather, not multi-week
-     forecasts) and only covers ~2021–22 onward. Searched alternatives:
-     NOAA CPC week 3–4 outlooks (above/below-normal odds only, official
-     for temperature from May 2017) and Open-Meteo Previous Runs API (1–7
-     day lead times, from 2024). No usable 3–6 week forecast archive back
-     to 2010. Methodological reason, not score-based.
-  2. Climatology built only from years before each fold's origin
-     (anything later is leakage).
-  3. Three weather spots, one per zone, top permit ZIP in each:
-     90026 Central (34.07883, -118.2637), 90045 Westside (33.95302,
-     -118.40028), 91367 Valley (34.174899, -118.615271). Reason: permits
-     spread across the city (top ZIP ~2%, top 15 ~25%), no single spot
-     represents it. Degree days per spot per day, then equal-weighted
-     average. Equal because zone shares are similar, and permit-count
-     weights would use all years (leakage).
-  4. Historical Weather API, `models=era5_land`. One model for the whole
-     range avoids the 2017 model switch (era-seam-style artifact). 9 km
-     grid keeps the three spots in separate squares; ERA5's ~25 km grid
-     could merge them.
-  5. Degree-day definition: base 65°F, daily temp = (max + min) / 2,
-     Fahrenheit, America/Los_Angeles timezone.
-  6. Weather gets its own notebook, `weather.ipynb` — charter §4, one
-     loader per source. `explore.ipynb` not renamed (decision log
-     references it).
+- Weather decisions logged 2026-10-07 (6 entries: climatology for all
+  horizons, pre-origin climatology, 3 spots + equal weights, ERA5-Land,
+  degree-day settings, weather.ipynb). Fix flagged typos if not done.
 - State of `backtest.ipynb` (clean Restart + Run All passed 2026-10-07):
   `score(model)` loops `range(len(origins))`, cuts both `train` and `akey`
   from `used_set`, stores guesses as `predicted` → column `prediction`,
