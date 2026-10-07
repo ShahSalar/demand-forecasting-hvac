@@ -135,7 +135,7 @@ things still in the air.
 ## Next review
 
 Carried over from the 2026-09-29 and 2026-09-30 sessions, trimmed by the
-2026-10-06 review. Only items not yet solid. Each example describes its
+2026-10-06 reviews. Only items not yet solid. Each example describes its
 table so it can be reviewed with only this file open.
 
 - Index alignment — when you assign a Series into a DataFrame column,
@@ -179,9 +179,19 @@ table so it can be reviewed with only this file open.
     counter (label 793 = position 793). If they stop matching, it
     silently grabs the wrong weeks.
 
-- `.iloc[0:6]` to grab fold 1 worked only because fold 1 was stacked
-  first. That's position luck. To get "rows where fold is 1," filter by
-  the `fold` column, same move as the `mask` cell.
+- Filtering rows by a column value — to get fold 1 out of `all_folds`
+  (72 rows; columns `ds`, `y`, `unique_id`, `baseline`, `fold`,
+  `horizon`, `miss`), ask for what you mean: "rows where `fold` is 1."
+  Two steps, same as the training slice in `score`:
+  `mask = weekly_hvac_permits['ds'] <= origins.iloc[i]` then
+  `.loc[mask]`.
+  1. Compare a column to a value → a True/False Series, one per row
+     (True where the condition holds).
+  2. Hand that True/False Series to `.loc[ ]` → keeps only the True rows.
+  Why not `.iloc[0:6]`: that means "first 6 rows." It matched fold 1
+  only because fold 1 was appended first. Sort or reorder `all_folds`
+  and it silently grabs the wrong rows. A filter on the `fold` column
+  gets fold 1 no matter the order.
 
 - MAE and MASE — answer from scratch next time.
   - MAE: each week's miss = |guess − actual|. MAE = average of those
@@ -196,24 +206,49 @@ table so it can be reviewed with only this file open.
   - Practice: a model scores MAE 28 at h4. What's its MASE? Pass?
     Another scores MASE 1.20 — better or worse than baseline, by how much?
 
-- **Interface** — every model follows the same rule: `train` goes in, 6
-  guesses come out. That's what lets one harness score any model.
+- **Two functions, not one** — `seasonal_naive` and `score` return
+  six numbers each, but totally different things.
+  - `seasonal_naive(train)`: takes one fold's training table (`train`,
+    every week up to that fold's origin; columns `ds`, `y`,
+    `unique_id`). Returns **6 guesses**, permit counts for the next 6
+    weeks. Fold 1: `[229, 308, 328, 301, 305, 245]`.
+  - `score(model)`: takes a model (a function). Runs all 12 folds,
+    calling `model(train)` once per fold (12 calls → 72 rows in
+    `all_folds`). Returns **6 MAE numbers**, one per horizon.
+  - The baseline MAE (22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8) comes
+    from `score(seasonal_naive)`. `seasonal_naive` alone never gives MAE.
+  - Mistake made in review: said `seasonal_naive` gives back the
+    baseline MAE. It gives guesses; `score` grades them.
 
-- **Higher-order function** — a function that takes another function as
-  an argument. `score(seasonal_naive)`: `score` doesn't care which model
-  it gets, it just calls whatever shows up. Pass in the **model**, not
-  its guesses, so every model takes the identical test.
+- **Interface** — the rule for how something plugs in: only what goes
+  in and what comes out, not what happens inside. Like a wall outlet:
+  lamp, charger, vacuum are all different inside, same plug.
+  - The harness plug: **in** = `train` (the full fold training table),
+    **out** = 6 guesses as a plain list.
+  - LightGBM will look nothing like seasonal-naive inside. It only has
+    to match the plug.
+  - Mistakes made in review: said models need "the same origins" —
+    no, origins live in `score`; `score` picks the origin, cuts
+    `train`, hands it over. The model never knows which fold it's on.
+    Said the model has to "make the same table" — no, it *takes*
+    `train`, it doesn't make it.
 
-- **Model vs data** — inside `score`, `model` is a function, so it's the
-  thing you *call*: `model(train)`. `train` is data, so it goes *inside*
-  the parentheses. Mistakes made: `model['ds']` (indexing a function
-  like a table) and `seasonal_naive(model)` (flipped). Clue: VS Code
-  grays out a variable that never gets used — gray `train` meant the
-  guesses weren't coming from it.
+- **Regression test** — rebuild or change something, then check it
+  still gives the **old, known answer**. `score(seasonal_naive)`
+  matching the six hand-built MAE numbers proved `score` is correct.
+  Had to use seasonal-naive because its answer was already known; a new
+  model has nothing to compare against.
+  Not related to regression the *model* (degree-day regression). Here
+  "regression" means going backwards — code breaking what used to work.
 
-- **Regression test** — rebuild something, confirm it gives the old
-  answer. `score(seasonal_naive)` matching the six hand-built MAE numbers
-  proves the wrap is correct before trusting it with a new model.
+- **Data leakage** — not answered in the 2026-10-06 review. Explain
+  first next time.
+  Context: the old loop made seasonal-naive guesses by reaching into
+  `used_set` (the full weekly table minus the 26-week holdout, which
+  includes weeks *after* each fold's origin). The new `seasonal_naive`
+  only gets `train`, which stops at the origin.
+  Question: what is data leakage, and why does it matter that the model
+  only gets `train`?
 
 - The wrap's output is MAE at **all six horizons** (1–6), not just h4
   MASE. Charter requires every horizon reported. MASE is a separate

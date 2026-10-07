@@ -184,3 +184,4 @@ per-year peak months extracted with idxmax
 2026-09-29 - <2:30> - Folds stacked, MAE scored at all 6 horizons, h4 bar computed, seasonal naive rebuilt from train and verified.
 2026-09-30 - <1:00> - seasonal_naive function built, score(model) wrap built, regression test passed, harness milestone hit on due date.
 2026-10-06 - <1:40> - Review Session
+2026-10-06 - <:40> - Review Session
