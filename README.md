@@ -11,7 +11,7 @@ Permit records published by the Los Angeles Department of Building and Safety (L
 Two era tables are combined into a single frame:
 
 Dataset ID  | Coverage     | Notes
---------------------------------------------------------
+--- | --- | ---
 `5m3t-xjex` | 2010–2019    | Static
 `67is-svtd` | 2020–present | Live, updates continuously
 
