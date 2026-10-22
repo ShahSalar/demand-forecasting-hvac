@@ -197,3 +197,4 @@ per-year peak months extracted with idxmax
 2026-10-06 - <0:30> - score() cleaned: .mean() for MAE, guesses column renamed to prediction, fold count tied to origins; regression test passed after catching an 11-fold bug.
 2026-10-07 - <0:35> - score() slices train and answer key from used_set; scratch cells deleted; pass bar rebuilt from score(seasonal_naive);
 2026-10-07 - <3:15> - weather plan settled (climatology for all horizons, 3 spots, ERA5-Land, °F, LA timezone), alternatives searched, weather.ipynb created, API pulled and spot 1 checked clean
+2026-10-22 - <3:10> - Review session — 42 topics, 9 on comeback list, review style added to notes
