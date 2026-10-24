@@ -95,16 +95,38 @@ things still in the air.
   top of that. If degree-day regression barely beats the baseline, that's a
   real result to report, not a failure to fix.
 
-- Weather archive (ERA5-Land) runs about a week behind today — last 7 days
-  came back NaN on the 2026-10-07 pull (unpublished, not missing). Doesn't
-  matter now (permit parquet ends 2026-09-20). Will matter in January when
-  deployed and pulling fresh. Decide then.
+- Weather archive (ERA5-Land) runs about a week behind today. On the
+  2026-10-07 pull the last 7 days came back NaN (unpublished, not missing).
+  On the 2026-10-23 pull they came back filled, 0 NaN anywhere, because the
+  URL's end date (Oct 7) was already past the ~7-day lag. Rule: compare the
+  requested end date against "today minus the lag." Doesn't matter now.
+  Will matter in January when deployed and pulling fresh. Decide then.
+
+- Weather data depends on the pull date, same as permits. Current
+  `sums_of_degree_days.parquet` was built from the 2026-10-23 pull. It's a
+  snapshot: if the URL or end date changes, re-run `weather.ipynb` and
+  re-save.
+
+- Hot-day CDD spot check was skipped on 2026-10-23. Only a cold day (row 0)
+  was checked by hand, and the "CDD > 0 and HDD > 0" check can't catch a
+  flipped sign. Untested: pull the highest `daily_avg` row and confirm
+  CDD = avg − 65, HDD = 0.
 
 ## Next session
 
-- **Timeline:** First model (degree-day regression) was due Oct 20 — missed
-  (break after midterms, deliberate). **Nov 3 MVP is the load-bearing date**
-  (LightGBM + baseline + evaluation). Big review done 2026-10-22, 42 topics.
+- **Timeline:** Weather parquet done 2026-10-23. Degree-day regression (Oct
+  20 milestone) still not done — that's next. **Nov 3 MVP is the
+  load-bearing date** (LightGBM + baseline + evaluation), 11 days out as of
+  2026-10-23. Degree-day regression is not part of the MVP definition —
+  decide whether it stays ahead of LightGBM.
+- **Log in decision-log.md if not done 2026-10-23:**
+  - Weekly degree days: daily CDD/HDD per spot → equal-weight average per
+    day → weekly **sum** (W-SUN) → partial weeks dropped (first week
+    2010-01-03 had 1 day, last week 2026-10-11 had 3 days) → 874 weeks,
+    saved to `data/sums_of_degree_days.parquet`, pull date 2026-10-23.
+    Write the reason for *sum* in my own words.
+  - Date column named `ds` to match the permit parquet so the join is one
+    clean line.
 - Weather decisions logged 2026-10-07 (6 entries: climatology for all
   horizons, pre-origin climatology, 3 spots + equal weights, ERA5-Land,
   degree-day settings, weather.ipynb). Fix flagged typos if not done.
@@ -114,21 +136,35 @@ things still in the air.
   MAE via `groupby('horizon')['miss'].mean()`. `baseline_MAE =
   score(seasonal_naive)`, `target_horizon = baseline_MAE * .85`
   (h4 bar 29.8). Scratch cells deleted.
-- State of `weather.ipynb`: URL locked:
+- State of `weather.ipynb` (2026-10-23): URL locked:
   `https://archive-api.open-meteo.com/v1/archive?latitude=34.07883,33.95302,34.174899&longitude=-118.2637,-118.40028,-118.615271&start_date=2010-01-03&end_date=2026-10-07&daily=temperature_2m_min,temperature_2m_max&models=era5_land&timezone=America%2FLos_Angeles&temperature_unit=fahrenheit`
-  `data = resp.json()` is a list of 3 dicts, same order as the URL
-  (Central, Westside, Valley). `first_weather_df` built from
-  `data[0]['daily']`: 6122 rows, 7 NaN per temp column, all at the end
-  (Oct 1–7, unpublished). No holes in the middle.
-- **Pick up at:** loop over the 3 spots → DataFrame from each `'daily'`,
-  add a zone column, append to a list, `pd.concat` once after. Open
-  question: how does each pass know its zone name? Call the row count
-  before running.
-- After that (one at a time): daily temp → CDD/HDD per spot per day →
-  equal-weight average across spots per day → weekly sum (W-SUN) → save
-  parquet. Climatology gets built per fold later, from pre-origin years.
-  The degree-day regression model itself lives in `backtest.ipynb` as a
-  function, next to `seasonal_naive`.
+  - `data = resp.json()` is a list of 3 dicts (Central, Westside, Valley,
+    same order as the URL). Each `'daily'` is a dict of 3 lists, 6122 days.
+  - Loop over `data` with `location = ['Central', 'Westside', 'Valley']`
+    → DataFrame per spot → `zone` column → append to `all_zones` →
+    `df_zones = pd.concat(all_zones)` → `reset_index(drop=True)`.
+    18,366 rows. 0 NaN. `time` parsed with `pd.to_datetime`.
+  - `daily_avg` = (min + max) / 2. `CDD` = (avg − 65).clip(lower=0).
+    `HDD` = (65 − avg).clip(lower=0).
+  - `three_average` = `groupby('time')[['CDD','HDD']].mean()` → 6122 days.
+  - `taw` = resample `W-SUN` sum → 876 weeks → `three_average_week` =
+    `taw.iloc[1:-1]` → 874 weeks → `reset_index()` + rename `time` → `ds`.
+  - Saved `../data/sums_of_degree_days.parquet`. Read back verified:
+    (874, 3), columns `ds` / `CDD` / `HDD`, `ds` is datetime64, first `ds`
+    2010-01-10 (matches permits).
+- **Cleanup in `weather.ipynb`:** cells that overwrite their own input
+  (`three_average_week = three_average_week.reset_index()`, and the
+  rename cell) are rerun-unsafe — fold into one line writing a new name
+  (e.g. `weekly_dd`). Names `three_average` / `taw` / `three_average_week`
+  are vague. Delete scratch cells (failed concat attempts, `.size()` check,
+  early test loops, `first_weather_df`). Then Restart + Run All and confirm
+  (874, 3) again.
+- **Pick up at:** degree-day regression in `backtest.ipynb`. Load
+  `sums_of_degree_days.parquet`, join to permits on `ds`. The model is a
+  function next to `seasonal_naive`: takes `train`, returns 6 guesses as a
+  plain list. Open question to start: how to build climatology for the 6
+  forecast weeks using **only years before the fold's origin** (no
+  leakage). Calendar features per charter §3 come after that.
 - `score()` returns MAE only. Charter §4 says the harness returns
   MAE / RMSE / MASE / coverage by horizon. Coverage waits for intervals
   (build step 8). Decide when to add RMSE and MASE. MASE denominator is
@@ -173,8 +209,8 @@ something isn't clicking.
 ## Next review
 
 Comeback list from the 2026-10-22 review (42 topics done, these 9 were
-wrong or shaky). Use the Review style above. Each has a fresh angle to
-try.
+wrong or shaky), plus items I asked to add during the 2026-10-23 build
+session. Use the Review style above. Each has a fresh angle to try.
 
 1. **Index alignment + why the model returns a plain list.** I asked for a
    better explanation. Fresh angle: pandas is like a mail carrier matching
@@ -205,13 +241,25 @@ try.
    - Example: rewrote `score()` with `.mean()`, checked it still gave
      22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8.
 
-4. **`type()` and list vs dict.**
+4. **Lists vs. dicts, with examples (+ `type()`).** Asked to add again
+   2026-10-23 — still shaky.
    - Like checking a box's label before opening it.
    - `list` → open with a **number**: `data[0]`.
    - `dict` → open with a **name (key)**: `data[0]['daily']`. No rows or
      columns — that's a table (DataFrame).
    - Wrong opener → error (lists don't take names; KeyError on a missing
      dict key).
+   - Fresh angle from 2026-10-23:
+     - `'daily'` is a **dict of lists**: 3 keys (`time`, min, max), each
+       holding a list 6122 long. `len(daily)` → **3** (counts keys).
+       `pd.DataFrame(daily)` → 3 columns, 6122 rows. Check: 5 keys × 100
+       values → `len` 5, shape (100, 5).
+     - `all_zones` is a **list of tables**, not a list of lists.
+     - `pd.concat(all_zones)` ✅ vs `pd.concat([all_zones])` ❌ — box
+       inside a box → TypeError.
+     - `rename(columns={'time': 'ds'})` uses a dict: old name → new name.
+     - When to pick which: **list** to keep things in order, **dict** to
+       grab things by name.
 
 5. **`resp` vs `resp.json()`.**
    - Amazon package: `resp` is the box + shipping label (`<Response
@@ -253,3 +301,14 @@ try.
    - **Not** "August is 23% bigger than January" — that would be
      60 / 240 = 25%.
    - It's the swing as a share of a normal week.
+
+10. **`.clip()` — `lower` vs `upper`.** New 2026-10-23. Used `upper=0` for
+    HDD by mistake.
+    - `lower=` is the **floor**: anything below gets raised to it.
+      `upper=` is the **ceiling**: anything above gets pushed down to it.
+      Leave one out → no limit on that side.
+    - Tiny example: [5, 12, 8].clip(lower=10) → [10, 12, 10].
+    - CDD = (avg − 65).clip(lower=0). HDD = (65 − avg).clip(lower=0).
+    - Rule: **flip the subtraction, not the clip.** Both use a floor of 0.
+    - `.clip()` doesn't delete or check anything — it pins numbers inside
+      a range.
