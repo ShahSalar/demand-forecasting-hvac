@@ -205,6 +205,8 @@ something isn't clicking.
 - **Don't ask** date-counting by hand (I check those with code).
 - If I've explicitly asked for a better explanation on a topic, give it
   a new angle, not the same words again.
+  - **One clean question.** No second clause or parenthetical that
+  gives away the answer to the first part. Ask it, then stop.
 
 ## Next review
 
