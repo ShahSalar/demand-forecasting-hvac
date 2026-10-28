@@ -54,11 +54,12 @@ things still in the air.
   at every horizon. Untested: which specific weeks drive the h3/h4 bump.
 
 - Series length moves with the pull date — 870 on 2026-09-10, 871 on
-  2026-09-15, 872 on 2026-09-21, since `67is-svtd` is live. Any recorded
-  count needs a pull date attached. Origins are pinned by position so this
-  no longer moves the folds, but it does move `used_set`'s length. The saved
-  parquet is a snapshot: re-export it from `explore.ipynb` after every pull,
-  or `backtest.ipynb` reads stale data.
+  2026-09-15, 872 on 2026-09-21, 876 on <pull date> (last week
+  2026-10-18), since `67is-svtd` is live. Any recorded count needs a pull
+  date attached. Origins are pinned by position so this no longer moves
+  the folds, but it does move `used_set`'s length. The saved parquet is a
+  snapshot: re-export it from `explore.ipynb` after every pull, or
+  `backtest.ipynb` reads stale data.
 
 - Pinned origins mean the backtest stops seeing new data as the series
   grows. Accepted deliberately for comparability across model runs. Open:
@@ -95,6 +96,19 @@ things still in the air.
   top of that. If degree-day regression barely beats the baseline, that's a
   real result to report, not a failure to fix.
 
+- Week 53 climatology is thin. ISO week 53 only exists in a few years
+  (2015 and 2020 inside the backtest), so its average comes from about 2
+  rows. No backtest fold forecasts a week 53. Could matter at deployment:
+  2026 has a week 53 (late December). Decide then.
+
+- OLS tooling. Charter §8 doesn't list statsmodels or scikit-learn. Options:
+  do it with `numpy` (already installed), or add a package. Adding one
+  deviates from §8, so log it. Decide at the start of the regression fit.
+
+- `train['week'] = ...` adds a column to the `train` slice. No warning in
+  the rehearsal. Inside the model function it might throw one. If it does,
+  read it before fixing.
+
 - Weather archive (ERA5-Land) runs about a week behind today. On the
   2026-10-07 pull the last 7 days came back NaN (unpublished, not missing).
   On the 2026-10-23 pull they came back filled, 0 NaN anywhere, because the
@@ -103,8 +117,11 @@ things still in the air.
   Will matter in January when deployed and pulling fresh. Decide then.
 
 - Weather data depends on the pull date, same as permits. Current
-  `sums_of_degree_days.parquet` was built from the 2026-10-23 pull. It's a
-  snapshot: if the URL or end date changes, re-run `weather.ipynb` and
+  `sums_of_degree_days.parquet` was built from the 2026-10-23 pull and ends
+  2026-10-04. After the 2026-10-28 join, the last 2 permit weeks
+  (2026-10-11, 2026-10-18) have NaN CDD/HDD. Both sit in the 26-week
+  holdout, so no fold reads them. Re-pull weather and re-save before the
+  holdout runs. If the URL or end date changes, re-run `weather.ipynb` and
   re-save.
 
 - Hot-day CDD spot check was skipped on 2026-10-23. Only a cold day (row 0)
@@ -114,28 +131,56 @@ things still in the air.
 
 ## Next session
 
-- **Timeline:** Weather parquet done 2026-10-23. Degree-day regression (Oct
-  20 milestone) still not done — that's next. **Nov 3 MVP is the
-  load-bearing date** (LightGBM + baseline + evaluation), 11 days out as of
-  2026-10-23. Degree-day regression is not part of the MVP definition —
-  decide whether it stays ahead of LightGBM.
-- **Log in decision-log.md if not done 2026-10-23:**
-  - Weekly degree days: daily CDD/HDD per spot → equal-weight average per
-    day → weekly **sum** (W-SUN) → partial weeks dropped (first week
-    2010-01-03 had 1 day, last week 2026-10-11 had 3 days) → 874 weeks,
-    saved to `data/sums_of_degree_days.parquet`, pull date 2026-10-23.
-    Write the reason for *sum* in my own words.
-  - Date column named `ds` to match the permit parquet so the join is one
-    clean line.
-- Weather decisions logged 2026-10-07 (6 entries: climatology for all
-  horizons, pre-origin climatology, 3 spots + equal weights, ERA5-Land,
-  degree-day settings, weather.ipynb). Fix flagged typos if not done.
-- State of `backtest.ipynb` (clean Restart + Run All passed 2026-10-07):
-  `score(model)` loops `range(len(origins))`, cuts both `train` and `akey`
-  from `used_set`, stores guesses as `predicted` → column `prediction`,
-  MAE via `groupby('horizon')['miss'].mean()`. `baseline_MAE =
-  score(seasonal_naive)`, `target_horizon = baseline_MAE * .85`
-  (h4 bar 29.8). Scratch cells deleted.
+- **Timeline (2026-10-28):** Order decided: degree-day regression first,
+  cutoff **Oct 31**. If it isn't scored by then, park it and go straight to
+  LightGBM. **Nov 3 MVP is the load-bearing date** (LightGBM + baseline +
+  evaluation), 6 days out. LightGBM not started. Weather join and
+  climatology are shared plumbing, so they count toward LightGBM too.
+- Weather decisions logged 2026-10-07 (6 entries). Fix flagged typos if
+  not done.
+- State of `backtest.ipynb` (2026-10-28):
+  - Weather loaded as `sum_of_degree_days` (874, 3).
+  - `permits_and_weather = weekly_hvac_permits.merge(sum_of_degree_days,
+    how='left')` → 876 rows × 5 columns (`ds`, `y`, `unique_id`, `CDD`,
+    `HDD`). Last 2 rows NaN weather (inside holdout).
+  - `used_set = permits_and_weather.iloc[:-26]` — one definition only,
+    placed after the merge. `score()` unchanged; it reads `used_set`.
+  - Regression test passed after Restart + Run All: 22.2 / 28.7 / 36.8 /
+    35.1 / 25.4 / 25.8.
+  - `baseline_MAE = score(seasonal_naive)`, `target_horizon =
+    baseline_MAE * .85` (h4 bar 29.8).
+- Rehearsal cells in `backtest.ipynb` (fold 1, scratch):
+  - `train` = fold 1 cut from `permits_and_weather` with `mask` (794 rows).
+  - `train['week'] = train['ds'].dt.isocalendar()['week']`
+  - `climatology = train.groupby('week')[['CDD','HDD']].mean()` → (53, 2),
+    `week` is the index.
+  - `last_date = train['ds'].iloc[-1]` → 2025-03-23.
+  - `forecast_weeks_fold_1` = list comprehension, `last_date +
+    pd.Timedelta(weeks=i)` for i in 1–6, then turned into a Series.
+    That cell overwrites its own input (rerun-unsafe).
+  - `climatology_fold_1_predict` = the 6 week numbers (13–18). Name says
+    climatology but it holds week numbers.
+  - `climatology.loc[climatology_fold_1_predict]` → 6 rows CDD/HDD.
+  - Loose global `train` exists now. Delete these scratch cells once the
+    model function works, so it can't get mixed up with the `train`
+    inside `score()`.
+- **Pick up at:** fit the regression on fold 1's `train` (y on CDD and
+  HDD). First decide OLS tooling (see Open questions). Then plug the 6
+  climatology rows in to get 6 guesses as a plain list. Then move every
+  step into `degree_day_regression(train)` next to `seasonal_naive`, run
+  `score()`, compare h4 against 29.8. Calendar features per charter §3
+  after that.
+- `score()` returns MAE only. Charter §4 says the harness returns
+  MAE / RMSE / MASE / coverage by horizon. Coverage waits for intervals
+  (build step 8). Decide when to add RMSE and MASE. MASE denominator is
+  always `baseline_MAE`.
+- **Cleanup in `weather.ipynb`:** cells that overwrite their own input
+  (`three_average_week = three_average_week.reset_index()`, and the
+  rename cell) are rerun-unsafe — fold into one line writing a new name
+  (e.g. `weekly_dd`). Names `three_average` / `taw` / `three_average_week`
+  are vague. Delete scratch cells (failed concat attempts, `.size()` check,
+  early test loops, `first_weather_df`). Then Restart + Run All and confirm
+  (874, 3) again.
 - State of `weather.ipynb` (2026-10-23): URL locked:
   `https://archive-api.open-meteo.com/v1/archive?latitude=34.07883,33.95302,34.174899&longitude=-118.2637,-118.40028,-118.615271&start_date=2010-01-03&end_date=2026-10-07&daily=temperature_2m_min,temperature_2m_max&models=era5_land&timezone=America%2FLos_Angeles&temperature_unit=fahrenheit`
   - `data = resp.json()` is a list of 3 dicts (Central, Westside, Valley,
@@ -152,23 +197,6 @@ things still in the air.
   - Saved `../data/sums_of_degree_days.parquet`. Read back verified:
     (874, 3), columns `ds` / `CDD` / `HDD`, `ds` is datetime64, first `ds`
     2010-01-10 (matches permits).
-- **Cleanup in `weather.ipynb`:** cells that overwrite their own input
-  (`three_average_week = three_average_week.reset_index()`, and the
-  rename cell) are rerun-unsafe — fold into one line writing a new name
-  (e.g. `weekly_dd`). Names `three_average` / `taw` / `three_average_week`
-  are vague. Delete scratch cells (failed concat attempts, `.size()` check,
-  early test loops, `first_weather_df`). Then Restart + Run All and confirm
-  (874, 3) again.
-- **Pick up at:** degree-day regression in `backtest.ipynb`. Load
-  `sums_of_degree_days.parquet`, join to permits on `ds`. The model is a
-  function next to `seasonal_naive`: takes `train`, returns 6 guesses as a
-  plain list. Open question to start: how to build climatology for the 6
-  forecast weeks using **only years before the fold's origin** (no
-  leakage). Calendar features per charter §3 come after that.
-- `score()` returns MAE only. Charter §4 says the harness returns
-  MAE / RMSE / MASE / coverage by horizon. Coverage waits for intervals
-  (build step 8). Decide when to add RMSE and MASE. MASE denominator is
-  always `baseline_MAE`.
 - Small leftovers in backtest: confirm cell `[3]` (`index.dtype`) was
   swapped for `.dtypes`. `train_scratch` name inside `seasonal_naive`
   (cosmetic).
@@ -185,6 +213,8 @@ something isn't clicking.
 
 - **One question at a time.** Show progress: *Topic X/N · Block Y*.
 - **I answer first.** Claude doesn't hint before I try.
+- **One clean question.** No second clause or parenthetical that gives
+  away the answer to the first part. Ask it, then stop.
 - **If I'm right:** one line confirming, then move on. No follow-up, no
   extra depth. Don't spend energy on things I already know.
 - **If I'm wrong or half-right, explain in this order:**
@@ -194,25 +224,27 @@ something isn't clicking.
   3. **What happens,** shown on that tiny table.
   4. **One-line rule** to remember.
   5. One simple check question. If I get it, move on.
+- **Ask the same question twice, max.** If I skip it twice or say move on,
+  move on.
 - **Plain words.** Short sentences. No new terms inside an explanation.
   Everyday comparison first if it helps (outlets, packages, pixels,
   fabric seams).
 - **Give context in the question** when it needs code or numbers I might
   not have memorized: show the line, the table, or the setup. I won't
   have the code in front of me.
+- **Don't stop the flow for naming** mid-build. Save naming notes for
+  cleanup, unless the name causes a real bug.
 - **Wrong or shaky topics** go on a comeback list, re-asked later with a
   fresh example. If I say "don't add it," don't.
 - **Don't ask** date-counting by hand (I check those with code).
 - If I've explicitly asked for a better explanation on a topic, give it
   a new angle, not the same words again.
-  - **One clean question.** No second clause or parenthetical that
-  gives away the answer to the first part. Ask it, then stop.
 
 ## Next review
 
 Comeback list from the 2026-10-22 review (42 topics done, these 9 were
-wrong or shaky), plus items I asked to add during the 2026-10-23 build
-session. Use the Review style above. Each has a fresh angle to try.
+wrong or shaky), plus items from the 2026-10-23 and 2026-10-28 build
+sessions. Use the Review style above. Each has a fresh angle to try.
 
 1. **Index alignment + why the model returns a plain list.** I asked for a
    better explanation. Fresh angle: pandas is like a mail carrier matching
@@ -227,6 +259,9 @@ session. Use the Review style above. Each has a fresh angle to try.
    - Also: 6 numbers can't sit in a 72-row table. Keep results like that
      in their own variable. (`reset_axis` doesn't exist; `reset_index`
      wouldn't fix it either.)
+   - 2026-10-28 example of alignment working *for* me:
+     `train['week'] = train['ds'].dt.isocalendar()['week']` lands on the
+     right rows because the labels carry through every step.
 
 2. **Kernel memory + function scope.**
    - A loop overwrites a variable every pass; after it ends, the variable
@@ -234,6 +269,8 @@ session. Use the Review style above. Each has a fresh angle to try.
    - Variables made **inside a function** vanish when it ends. `train` now
      lives inside `score()`, so typing `train` in a new cell → NameError.
    - Fix for stale memory: Restart kernel → Run All; counts start at [1].
+   - 2026-10-28: ran a regression test at `[62]`/`[63]` without
+     restarting. The count is the tell.
 
 3. **Regression test — the definition, not just the habit.**
    - Definition: change code, then check it still gives the **old, known
@@ -241,7 +278,8 @@ session. Use the Review style above. Each has a fresh angle to try.
      work). Not the regression model.
    - Habit: call the numbers before running.
    - Example: rewrote `score()` with `.mean()`, checked it still gave
-     22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8.
+     22.2 / 28.7 / 36.8 / 35.1 / 25.4 / 25.8. Did it again 2026-10-28
+     after adding weather columns to `used_set`.
 
 4. **Lists vs. dicts, with examples (+ `type()`).** Asked to add again
    2026-10-23 — still shaky.
@@ -314,3 +352,100 @@ session. Use the Review style above. Each has a fresh angle to try.
     - Rule: **flip the subtraction, not the clip.** Both use a floor of 0.
     - `.clip()` doesn't delete or check anything — it pins numbers inside
       a range.
+
+11. **Rehearsal (scratch run before the function).** New 2026-10-28.
+    - Run the steps by hand on one fold (fold 1's `train`) in a scratch
+      cell. See each step work. Then move the lines into the model
+      function.
+    - Why: inside a function you can't peek at middle steps, and its
+      variables vanish when it ends (see #2).
+    - Like cooking a recipe once before cooking it for 12 people.
+    - Check question to use: why rehearse on one fold instead of writing
+      the function straight away?
+
+12. **The ISO week line, step by step.** New 2026-10-28. Asked to add.
+    - `train['week'] = train['ds'].dt.isocalendar()['week']`
+    - Each piece hands the next piece something smaller:
+      - `train['ds']` → the date column
+      - `.dt` → open the date toolbox (only works on a pandas column)
+      - `.isocalendar()` → a mini table: `year`, `week`, `day`
+      - `['week']` → pick one column by name
+      - `train['week'] = ...` → stick it on as a new column
+    - Tiny example: 2025-03-16 → (2025, 11, 7). 2025-03-23 → (2025, 12, 7).
+      `day` 7 = Sunday.
+    - Fresh angle: a funnel. Wide at the top (the whole date), one number
+      at the bottom.
+    - Check question to use: what does `.isocalendar()` hand back before
+      `['week']` — one column or three?
+
+13. **Climatology key: ISO week, not month-day, not 52-row hops.** New
+    2026-10-28. Guessed month-day, then 364 days back.
+    - Week labels are Sundays. The Sunday drifts about a day each year.
+    - Tiny table: 2022-04-03, 2023-04-02, 2024-03-31, 2025-03-30 → four
+      different month-days, all ISO week 13.
+    - Group by month-day → one row per group → `.mean()` of one row does
+      nothing, and no error tells you.
+    - Hopping back 52 rows gets **one** past year. That's seasonal-naive.
+      Climatology wants **every** past year at once.
+    - Rule: group on the thing that stays the same across years.
+    - Check question to use: why does grouping by month-day give groups
+      of one row?
+
+14. **Last row of `train` = origin, and `iloc[-1]` vs `iloc[:-1]`.** New
+    2026-10-28. Said "the 52nd row," then wrote `iloc[:-1]`.
+    - `train` always stops at the origin, so its last row is the origin.
+      The model works out its 6 forecast dates from there.
+    - Tiny example on `[a, b, c]`: `iloc[:-1]` → `[a, b]` (a slice).
+      `iloc[-1]` → `c` (one item). `iloc[-2]` → `b`.
+    - Rule: colon = a range of rows. No colon = one row.
+    - Check question to use: on `[a, b, c, d]`, what does `iloc[:-2]`
+      give?
+
+15. **`['name'] = ...` on a Series vs a DataFrame.** New 2026-10-28. Added
+    a row by accident.
+    - DataFrame → makes a new **column**.
+    - Series → makes a new **row** labeled `'name'`.
+    - Tiny example: `s = [a, b, c]`, `s['x'] = 5` → `a, b, c, 5`, last one
+      labeled `'x'`.
+    - `dtype: object` = mixed bag. A sign something got stuffed in.
+    - Fix: save the result to its **own** variable.
+    - Check question to use: `s` is a Series of 6 dates. After
+      `s['week'] = something`, how many rows?
+
+16. **Data flows down into the model, only 6 guesses come up.** New
+    2026-10-28. Got it wrong twice (thought folds get joined back; then
+    thought climatology lives in `score()`).
+    - `score()` cuts `train` → calls `model(train)` → 6 guesses come back.
+    - Climatology is built **inside the model**, used, and tossed. Never
+      joined back. `all_folds` stacks guesses and answers, not climatology.
+    - Fresh angle: 12 students, each tested on a different date, each
+      studying only notes from before their date. Each works out "what's
+      week 13 usually like?" from **their own** notes. That's why it
+      can't be one column in the big table.
+    - Check question to use: once `score()` finishes, does fold 1's
+      climatology still exist anywhere?
+
+17. **Plumbing + simplest model first.** New 2026-10-28.
+    - **Plumbing** = the code that moves data: loading, joins, the
+      climatology function, feeding it into `score()`. The pipes, not the
+      water. Not "a new piece of data."
+    - Rule: when you add new plumbing, run it through the simplest model
+      first, so only one thing is new at a time.
+    - Degree-day regression **is** a real model (the first one fitted).
+      Seasonal-naive is the floor. LightGBM is not "the first real model."
+    - Check question to use: why test the weather join on degree-day
+      regression instead of LightGBM?
+
+18. **Reading error messages.** New 2026-10-28.
+    - Error names tell you the kind of problem; the message names the
+      thing.
+    - `TypeError: Can only merge Series or DataFrame objects, a <class
+      'str'> was passed` → wrong type handed in. Cause: quotes.
+      `'sum_of_degree_days'` is a string; `sum_of_degree_days` is the
+      table.
+    - `AttributeError: 'list' object has no attribute 'isocalendar'` →
+      this thing doesn't have that tool. Cause: called it on the whole
+      list, not one date.
+    - Rule: read what it **wanted** vs what it **got**.
+    - Check question to use: `AttributeError: 'Series' object has no
+      attribute 'foo'` — what's the problem, in plain words?
